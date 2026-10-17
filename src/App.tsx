@@ -1,30 +1,25 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
-import Home from './pages/Home'
-import Products from './pages/Products'
-import ProductDetail from './pages/ProductDetail'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { Layout } from './components/Layout'
+import { CartProvider } from './context/CartContext'
 import Cart from './pages/Cart'
-import Checkout from './pages/Checkout'
-import About from './pages/About'
-import Contact from './pages/Contact'
-import Layout from './components/Layout'
-import './App.css'
+import Catalog from './pages/Catalog'
+import Home from './pages/Home'
+import ProductDetail from './pages/ProductDetail'
 
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Layout>
+    <CartProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/catalogo" element={<Catalog />} />
+            <Route path="/producto/:id" element={<ProductDetail />} />
+            <Route path="/bolsa" element={<Cart />} />
+            <Route path="*" element={<Home />} />
+          </Route>
         </Routes>
-      </Layout>
-    </BrowserRouter>
+      </BrowserRouter>
+    </CartProvider>
   )
 }
-
-export default App
