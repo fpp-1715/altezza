@@ -7,7 +7,7 @@ import { useAsync } from '../lib/useAsync'
 import { getFeaturedProducts } from '../services/productService'
 
 const PILLARS = [
-  { icon: 'verified', title: 'Oro Certificado & Trazable', text: 'Ley 18K y 14K con contraste de pureza y procedencia responsable.' },
+  { icon: 'verified', title: 'Garantía de oro de por vida', text: 'Cada pieza de oro cuenta con garantía de por vida.' },
   { icon: 'workspace_premium', title: 'Calidad y diseño', text: 'Joyería de oro y diseños seleccionados, elaborados en fábrica.' },
   { icon: 'storefront', title: 'Recogida en tienda', text: 'Consulta la disponibilidad y coordina la recogida por WhatsApp. Para domicilio, consúltanos por WhatsApp.' },
 ]

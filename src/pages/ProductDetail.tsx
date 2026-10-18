@@ -26,11 +26,8 @@ const ACCORDIONS = [
   },
   {
     icon: 'workspace_premium',
-    title: 'Garantía de Autenticidad y Pureza Altezza',
-    body: [
-      'Cada pieza incluye su certificado físico individual con sello lacrado y número de serie único rastreable en nuestra bóveda digital.',
-      'Garantizamos de por vida la pureza exacta del metal precioso y el origen ético y libre de conflicto de las gemas bajo el Proceso Kimberley.',
-    ],
+    title: 'Garantía de Oro de por Vida',
+    body: ['Todas nuestras piezas de oro cuentan con garantía de por vida sobre el oro.'],
   },
   {
     icon: 'redeem',
@@ -128,6 +125,9 @@ function ProductView({ product }: { product: Product }) {
 
   const consult = whatsappUrl(
     `Hola Altezza, deseo asesoramiento personalizado sobre ${product.title} (Ref: ${product.sku})`,
+  )
+  const specialMeasureConsult = whatsappUrl(
+    `Hola Altezza, quisiera consultar por medidas especiales o medias tallas para ${product.title} (Ref: ${product.sku}). ¿Podrían asesorarme sobre las opciones disponibles?`,
   )
 
   const pickMetal = (m: MetalOption) => setSel((s) => ({ ...s, metal: m }))
@@ -300,10 +300,21 @@ function ProductView({ product }: { product: Product }) {
                   )
                 })}
               </div>
-              <p className="flex items-center gap-1.5 font-technical-data text-technical-data text-on-surface-variant">
+              <div className="flex items-start gap-1.5 font-technical-data text-technical-data text-on-surface-variant">
                 <span className="material-symbols-outlined text-[16px] text-primary">info</span>
-                ¿Medida especial o media talla? Nuestro maestro orfebre la adapta sin cargo.
-              </p>
+                <span>
+                  ¿Buscas una medida especial o media talla? Tenemos varias opciones para que encuentres el ajuste perfecto.{' '}
+                  <a
+                    href={specialMeasureConsult}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline underline-offset-2 hover:text-on-surface transition-colors"
+                  >
+                    Escríbenos por WhatsApp
+                  </a>{' '}
+                  y nuestro equipo te asesorará personalmente.
+                </span>
+              </div>
             </div>
           )}
 
@@ -380,8 +391,8 @@ function ProductView({ product }: { product: Product }) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Especificaciones de Taller</h3>
           <span className="flex items-center gap-1 font-label-caps text-[10px] text-primary uppercase tracking-wider">
-            <span className="material-symbols-outlined text-[16px]">military_tech</span>
-            Sello Oficial Altezza
+            <span className="material-symbols-outlined text-[16px]">verified_user</span>
+            Garantía de oro de por vida
           </span>
         </div>
         <dl className="rounded-xl bg-surface-container-low divide-y divide-outline-variant/30">
