@@ -1,5 +1,8 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { whatsappUrl } from '../lib/config'
+import AdminLoginModal from './AdminLoginModal'
+import { useAdminAuth } from '../context/AdminAuthContext'
 
 const LINKS = [
   { to: '/', label: 'Inicio', icon: 'home' },
@@ -26,7 +29,7 @@ export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         >
           <div className="h-16 px-5 flex items-center justify-between">
             <span className="font-title-editorial text-title-editorial tracking-[0.2em] text-primary uppercase">
-              A&amp;G
+              Altezza
             </span>
             <button
               aria-label="Cerrar menú"
@@ -50,11 +53,22 @@ export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => vo
             ))}
           </nav>
           <div className="mt-auto p-5">
+            <button
+              onClick={onClose}
+              className="w-full h-11 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 mb-2"
+            >
+              <span className="material-symbols-outlined text-[20px]">info</span>
+              Acerca de
+            </button>
+
+            {/* Administrador — abre modal de login */}
+            <AdminLoginTrigger />
+
             <a
-              href={whatsappUrl('Hola A&G, deseo atención personalizada.')}
+              href={whatsappUrl('Hola Altezza, deseo atención personalizada.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full h-11 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold uppercase tracking-wider flex items-center justify-center gap-2"
+              className="w-full h-11 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold uppercase tracking-wider flex items-center justify-center gap-2 mt-3"
             >
               <span className="material-symbols-outlined text-[20px]">chat</span>
               Concierge
@@ -63,5 +77,49 @@ export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         </aside>
       </div>
     </div>
+  )
+}
+
+function AdminLoginTrigger() {
+  const [open, setOpen] = useState(false)
+  const { user: adminUser, loading, login, logout } = useAdminAuth()
+
+  return (
+    <>
+      {adminUser ? (
+        <div className="flex flex-col gap-2">
+          <Link
+            to="/admin"
+            className="w-full h-11 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(230,194,118,0.25)]"
+          >
+            <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+            <span>Panel de Administrador</span>
+          </Link>
+          <button
+            onClick={() => {
+              void logout().catch((error: unknown) => {
+                console.error('No se pudo cerrar la sesión:', error)
+              })
+              setOpen(false)
+            }}
+            className="w-full h-10 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-error font-technical-data text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">logout</span>
+            <span>Cerrar sesión ({adminUser})</span>
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="w-full h-11 rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[20px] text-primary">
+            admin_panel_settings
+          </span>
+          <span>Acceso Administrador</span>
+        </button>
+      )}
+      <AdminLoginModal open={open} onClose={() => setOpen(false)} onLogin={login} disabled={loading} />
+    </>
   )
 }

@@ -1,18 +1,13 @@
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMoney, whatsappUrl } from '../lib/config'
-import type { CartItem } from '../types'
-
-const lineDetail = (i: CartItem) =>
-  [`SKU: ${i.sku}`, i.variant, i.engraving ? `Grabado: '${i.engraving}'` : undefined].filter(Boolean).join(', ')
-
 export default function Cart() {
   const { items, count, subtotal, updateQty, removeItem } = useCart()
 
   const message =
-    `Hola A&G Joyería, deseo encargar las siguientes piezas:\n` +
-    items.map((i) => `• ${i.qty}x ${i.name} (${lineDetail(i)}) - ${formatMoney(i.qty * i.unitPrice)}`).join('\n') +
-    `\nTotal: ${formatMoney(subtotal)} USD. ¿Me confirman disponibilidad para coordinar el envío?`
+    `Hola Altezza, quisiera consultar la disponibilidad de estos productos:\n` +
+    items.map((i) => `• ${i.qty}x ${i.name} — ${formatMoney(i.qty * i.unitPrice)} USD`).join('\n') +
+    `\nTotal: ${formatMoney(subtotal)} USD.\n¿Me confirman si están disponibles? Los recogería en la tienda. Para consultar sobre domicilio, por favor indíquenme las opciones.`
 
   if (items.length === 0) {
     return (
@@ -110,17 +105,10 @@ export default function Cart() {
         </div>
         <div className="flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant">
           <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[18px]">redeem</span>
-            Estuche de lujo &amp; Certificado de Autenticidad
+            <span className="material-symbols-outlined text-primary text-[18px]">storefront</span>
+            Recogida en tienda
           </span>
-          <span className="text-tertiary shrink-0 ml-2">Cortesía A&amp;G</span>
-        </div>
-        <div className="flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant">
-          <span className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[18px]">security</span>
-            Envío asegurado con custodia valorada
-          </span>
-          <span className="text-tertiary shrink-0 ml-2">Gratis</span>
+          <span className="text-tertiary shrink-0 ml-2">Coordinar por WhatsApp</span>
         </div>
         <div className="pt-3 border-t border-outline-variant/40 flex items-end justify-between">
           <div>
@@ -144,7 +132,7 @@ export default function Cart() {
           </div>
         </div>
         <p className="font-body-sm text-body-sm text-on-surface-variant">
-          Su orden es procesada personalmente por un asesor gemólogo y coordinamos el pago y el envío por WhatsApp.
+          Confirma la disponibilidad por WhatsApp. Todos los productos se recogen en la tienda; consulta por WhatsApp si deseas información sobre domicilio.
         </p>
         <div className="rounded-lg bg-surface-container-lowest p-3">
           <span className="flex items-center gap-1.5 font-label-caps text-[10px] text-tertiary uppercase tracking-wider mb-2">

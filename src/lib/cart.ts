@@ -10,9 +10,10 @@ export interface Selection {
 }
 
 export function defaultSelection(product: Product): Selection {
+  const sizes = Array.isArray(product.sizes) ? product.sizes : []
   return {
-    metal: product.metals?.[0],
-    size: product.sizes ? (product.sizes.find((s) => s.size === '7') ?? product.sizes[0]).size : undefined,
+    metal: Array.isArray(product.metals) ? product.metals[0] : undefined,
+    size: (sizes.find((s) => s.size === '7') ?? sizes[0])?.size,
   }
 }
 

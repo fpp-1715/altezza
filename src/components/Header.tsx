@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { MenuDrawer } from './MenuDrawer'
+import { BRAND } from '../lib/config'
 
 const TITLES: Record<string, string> = {
   '/': 'Inicio',
@@ -28,15 +29,17 @@ export function Header() {
           </button>
           <Link to="/" className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-full bg-surface-container-high ring-1 ring-primary/40 flex items-center justify-center font-title-editorial text-[10px] font-bold text-primary tracking-wider">
-              A&amp;G
+              AL
             </span>
             <div className="flex flex-col items-center">
               <span className="font-title-editorial text-title-editorial tracking-[0.2em] text-primary uppercase leading-tight">
-                A&amp;G
+                {BRAND.name}
               </span>
-              <span className="font-label-caps text-[9px] uppercase tracking-[0.28em] text-on-surface-variant font-medium">
-                Haute Parfumerie
-              </span>
+              {BRAND.tagline ? (
+                <span className="font-label-caps text-[9px] uppercase tracking-[0.28em] text-on-surface-variant font-medium">
+                  {BRAND.tagline}
+                </span>
+              ) : null}
             </div>
           </Link>
           <div className="flex items-center">

@@ -1,11 +1,13 @@
 export const WHATSAPP_NUMBER =
-  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) ?? '34600000000'
+  (import.meta.env.VITE_WHATSAPP_NUMBER as string | undefined) ?? '5353765926'
 
 export const BRAND = {
-  name: 'A&G',
-  tagline: 'Haute Parfumerie',
-  email: 'concierge@ayg-luxe.com',
-  address: 'Av. Alvear 1890, Recoleta',
+  name: 'Altezza',
+  // tagline left intentionally blank per user request
+  tagline: '',
+  // no public email provided
+  email: '',
+  address: 'Villuendas #54, dentro del taller Otro Nivel',
 }
 
 export const whatsappUrl = (message: string) =>

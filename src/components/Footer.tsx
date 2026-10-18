@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="pt-10 pb-8 px-5 bg-surface-container-lowest text-on-surface-variant">
       <div className="flex flex-col items-center text-center mb-8">
         <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-3 text-primary">
-          <span className="font-title-editorial text-[20px] font-bold tracking-[0.15em]">A&amp;G</span>
+          <span className="font-title-editorial text-[20px] font-bold tracking-[0.15em]">AL</span>
         </div>
         <span className="font-label-caps text-label-caps text-primary tracking-[0.3em] uppercase block font-semibold">
           Joyería | Perfumería
@@ -22,9 +22,9 @@ export function Footer() {
           </h5>
           <ul className="flex flex-col gap-2 font-body-sm text-[13px] text-on-surface-variant">
             <li>{BRAND.address}</li>
-            <li>Lun a Sáb: 11:00 - 19:30</li>
+            <li>Lunes a sábado: 8:00 a. m. - 3:00 p. m.</li>
             <li>Citas privadas con reserva</li>
-            <li>{BRAND.email}</li>
+            {BRAND.email ? <li>{BRAND.email}</li> : null}
           </ul>
         </div>
         <div>
@@ -42,10 +42,11 @@ export function Footer() {
       <div className="pt-6 flex flex-col items-center gap-4">
         <div className="flex items-center gap-4">
           {[
-            { label: 'Instagram', icon: 'photo_camera', href: 'https://instagram.com' },
+            // Only include social/action buttons when the related data is provided
+            ...(/* Instagram */ []),
             { label: 'Ubicación Boutique', icon: 'location_on', href: `https://maps.google.com/?q=${encodeURIComponent(BRAND.address)}` },
-            { label: 'Email Maison', icon: 'mail', href: `mailto:${BRAND.email}` },
-            { label: 'WhatsApp', icon: 'chat', href: whatsappUrl('Hola A&G, deseo información.') },
+            ...(BRAND.email ? [{ label: 'Email Maison', icon: 'mail', href: `mailto:${BRAND.email}` }] : []),
+            { label: 'WhatsApp', icon: 'chat', href: whatsappUrl('Hola Altezza, deseo información.') },
           ].map((s) => (
             <a
               key={s.label}
@@ -60,7 +61,7 @@ export function Footer() {
           ))}
         </div>
         <div className="text-center font-technical-data text-[11px] text-on-surface-variant/50">
-          <p>© {new Date().getFullYear()} A&amp;G Haute Joaillerie &amp; Parfumerie. Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} {BRAND.name}. Todos los derechos reservados.</p>
           <p className="mt-0.5">Certificación gemológica internacional y metales éticos.</p>
         </div>
       </div>

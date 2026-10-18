@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { buildCartItem, defaultSelection, metalDisplay, unitPrice } from '../lib/cart'
 import type { Selection } from '../lib/cart'
-import { formatMoney, whatsappUrl } from '../lib/config'
+import { formatMoney, whatsappUrl, BRAND } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
 import { getProduct, getRelatedProducts } from '../services/productService'
 import type { MetalOption, Product } from '../types'
@@ -21,12 +21,12 @@ const ACCORDIONS = [
     title: 'Cuidados y Mantenimiento',
     body: [
       'Para preservar el brillo original, recomendamos limpiar la pieza periódicamente con agua tibia, jabón de pH neutro y un cepillo de cerdas ultrasuaves.',
-      'Todos nuestros clientes disfrutan de mantenimiento y pulido anual gratuito de por vida en cualquiera de nuestras boutiques A&G.',
+      'Todos nuestros clientes disfrutan de mantenimiento y pulido anual gratuito de por vida en nuestra tienda Altezza.',
     ],
   },
   {
     icon: 'workspace_premium',
-    title: 'Garantía de Autenticidad y Pureza A&G',
+    title: 'Garantía de Autenticidad y Pureza Altezza',
     body: [
       'Cada pieza incluye su certificado físico individual con sello lacrado y número de serie único rastreable en nuestra bóveda digital.',
       'Garantizamos de por vida la pureza exacta del metal precioso y el origen ético y libre de conflicto de las gemas bajo el Proceso Kimberley.',
@@ -34,10 +34,10 @@ const ACCORDIONS = [
   },
   {
     icon: 'redeem',
-    title: 'Empaque de Colección & Envío Blindado',
+    title: 'Entrega y recogida',
     body: [
-      'Reciba su pieza presentada en nuestro emblemático estuche de piel teñida en obsidiana con forro de ante aterciopelado y sellos dorados en relieve.',
-      'Entregas gestionadas mediante mensajería de seguridad privada con póliza de seguro a valor real 100% cubierto hasta la entrega en mano con firma requerida.',
+      'Los productos se recogen en la tienda. Coordina la disponibilidad y la recogida por WhatsApp.',
+      'Para consultar sobre domicilio, escríbenos por WhatsApp.',
     ],
   },
 ]
@@ -127,7 +127,7 @@ function ProductView({ product }: { product: Product }) {
   }
 
   const consult = whatsappUrl(
-    `Hola Atelier A&G, deseo asesoramiento personalizado sobre ${product.title} (Ref: ${product.sku})`,
+    `Hola Altezza, deseo asesoramiento personalizado sobre ${product.title} (Ref: ${product.sku})`,
   )
 
   const pickMetal = (m: MetalOption) => setSel((s) => ({ ...s, metal: m }))
@@ -147,7 +147,7 @@ function ProductView({ product }: { product: Product }) {
             <h1 className="font-title-editorial text-title-editorial text-on-surface truncate tracking-wide max-w-[200px]">
               Detalle De Pieza
             </h1>
-            <span className="font-label-caps text-[9px] uppercase tracking-[0.22em] text-primary">Atelier A&amp;G</span>
+            <span className="font-label-caps text-[9px] uppercase tracking-[0.22em] text-primary">{BRAND.name}</span>
           </div>
           <div className="flex items-center gap-1">
             <Link
@@ -177,7 +177,7 @@ function ProductView({ product }: { product: Product }) {
           />
           <div className="absolute top-3 left-3 bg-surface-container-lowest/80 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
             <span className="material-symbols-outlined text-primary text-[14px]">verified</span>
-            <span className="font-technical-data text-technical-data text-primary uppercase">Taller Central A&amp;G</span>
+            <span className="font-technical-data text-technical-data text-primary uppercase">Altezza</span>
           </div>
           {images.length > 1 && (
             <div className="absolute bottom-3 inset-x-0 flex justify-center items-center gap-1.5">
@@ -367,7 +367,7 @@ function ProductView({ product }: { product: Product }) {
         <div className="flex items-center justify-center gap-6 font-technical-data text-technical-data text-on-surface-variant">
           <span className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-primary text-[16px]">security</span>
-            Envío asegurado en tránsito
+            Recogida en tienda
           </span>
           <span className="flex items-center gap-1.5">
             <span className="material-symbols-outlined text-primary text-[16px]">restart_alt</span>
@@ -381,7 +381,7 @@ function ProductView({ product }: { product: Product }) {
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Especificaciones de Taller</h3>
           <span className="flex items-center gap-1 font-label-caps text-[10px] text-primary uppercase tracking-wider">
             <span className="material-symbols-outlined text-[16px]">military_tech</span>
-            Sello Oficial A&amp;G
+            Sello Oficial Altezza
           </span>
         </div>
         <dl className="rounded-xl bg-surface-container-low divide-y divide-outline-variant/30">
@@ -433,7 +433,7 @@ function ProductView({ product }: { product: Product }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary">straighten</span>
-                <h4 className="font-title-editorial text-title-editorial text-on-surface">Guía de Tallas A&amp;G</h4>
+                <h4 className="font-title-editorial text-title-editorial text-on-surface">Guía de Tallas Altezza</h4>
               </div>
               <button aria-label="Cerrar" onClick={() => setGuideOpen(false)} className="text-on-surface-variant">
                 <span className="material-symbols-outlined">close</span>
@@ -480,9 +480,9 @@ export default function ProductDetail() {
   const { data: product, loading } = useAsync(() => getProduct(id), [id])
 
   useEffect(() => {
-    if (product) document.title = `${product.name} — A&G`
+    if (product) document.title = `${product.name} — ${BRAND.name}`
     return () => {
-      document.title = 'A&G — Haute Joaillerie & Parfumerie'
+      document.title = BRAND.name
     }
   }, [product])
 

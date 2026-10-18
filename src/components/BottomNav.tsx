@@ -30,7 +30,7 @@ export function BottomNav() {
           <span className={labelClass}>Joyas</span>
         </Link>
         <a
-          href={whatsappUrl('Hola A&G, deseo atención personalizada.')}
+          href={whatsappUrl('Hola Altezza, deseo atención personalizada.')}
           target="_blank"
           rel="noopener noreferrer"
           className={`${itemClass(false)} hover:text-tertiary`}
@@ -40,7 +40,7 @@ export function BottomNav() {
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary animate-ping opacity-75" />
             <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary ring-1 ring-surface" />
           </div>
-          <span className={labelClass}>Concierge</span>
+          <span className={labelClass}>WhatsApp</span>
         </a>
         <Link to="/bolsa" className={itemClass(pathname === '/bolsa')}>
           <span className="material-symbols-outlined text-[22px]">shopping_bag</span>

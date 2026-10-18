@@ -1,16 +1,15 @@
 import { Link } from 'react-router-dom'
-import { FeaturedCard } from '../components/FeaturedCard'
 import { Footer } from '../components/Footer'
 import { IMG } from '../data/images'
 import { MASTER_CATEGORIES } from '../data/products'
-import { whatsappUrl } from '../lib/config'
+import { formatMoney, whatsappUrl } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
 import { getFeaturedProducts } from '../services/productService'
 
 const PILLARS = [
   { icon: 'verified', title: 'Oro Certificado & Trazable', text: 'Ley 18K y 14K con contraste de pureza y procedencia responsable.' },
-  { icon: 'workspace_premium', title: 'Garantía de Autenticidad', text: 'Certificación gemológica GIA y números de serie grabados en fábrica.' },
-  { icon: 'lock', title: 'Envío de Alta Seguridad', text: 'Entrega blindada, rastreo satelital y seguro a todo riesgo incluido.' },
+  { icon: 'workspace_premium', title: 'Calidad y diseño', text: 'Joyería de oro y diseños seleccionados, elaborados en fábrica.' },
+  { icon: 'storefront', title: 'Recogida en tienda', text: 'Consulta la disponibilidad y coordina la recogida por WhatsApp. Para domicilio, consúltanos por WhatsApp.' },
 ]
 
 export default function Home() {
@@ -30,7 +29,7 @@ export default function Home() {
             <div className="flex items-center gap-2 mb-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.25em]">
-                Maison A&amp;G • Haute Joaillerie
+                Joyería / Relojería / Perfumería
               </span>
             </div>
             <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight mb-3">
@@ -45,7 +44,7 @@ export default function Home() {
                 to="/catalogo"
                 className="w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md tracking-wider uppercase font-semibold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(230,194,118,0.2)] transition-all duration-200 active:scale-[0.98]"
               >
-                <span>Explorar colección</span>
+                <span>Ver catálogo</span>
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </Link>
               <Link
@@ -104,7 +103,7 @@ export default function Home() {
         <div className="flex items-end justify-between mb-5">
           <div>
             <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em] block mb-1">
-              Selección del Sommelier &amp; Joyero
+              Selección de Joyería y Perfumería
             </span>
             <h2 className="font-headline-sm text-headline-sm text-on-surface">Piezas Destacadas</h2>
           </div>
@@ -116,11 +115,38 @@ export default function Home() {
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="flex snap-x gap-3 overflow-x-auto px-0 pb-1 no-scrollbar">
           {featured
-            ? featured.map((p) => <FeaturedCard key={p.id} product={p} />)
+            ? featured.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/producto/${product.id}`}
+                  className="group w-36 shrink-0 snap-start"
+                >
+                  <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)]">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/30 to-transparent" />
+                    <div className="absolute inset-x-3 bottom-3 text-center">
+                      <span className="mb-0.5 block truncate font-label-caps text-[10px] uppercase tracking-[0.18em] text-primary">
+                        {product.categoryLabel}
+                      </span>
+                      <span className="block line-clamp-2 font-title-editorial text-sm leading-tight text-on-surface">
+                        {product.name}
+                      </span>
+                      <span className="mt-0.5 block font-technical-data text-[10px] text-on-surface-variant">
+                        {formatMoney(product.price)} USD
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
             : Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="aspect-[3/4] rounded-xl bg-surface-container animate-pulse" />
+                <div key={i} className="h-48 w-36 shrink-0 rounded-xl bg-surface-container animate-pulse" />
               ))}
         </div>
       </section>
@@ -145,7 +171,7 @@ export default function Home() {
               <span className="italic text-primary">de Matrimonio</span>
             </h2>
             <p className="font-body-sm text-body-sm text-on-surface-variant max-w-[290px] mb-6 leading-relaxed">
-              Símbolos imperecederos forjados a mano con metales nobles y gemas de certificación superior para sellar promesas de por vida.
+              Cadenas, alianzas y anillos de oro elaborados en fábrica para acompañar momentos especiales.
             </p>
             <Link
               to="/catalogo?cat=anillos"
@@ -161,7 +187,7 @@ export default function Home() {
       <section className="py-8 px-5 bg-surface-container-low">
         <div className="text-center mb-6">
           <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.22em] block mb-1">
-            Compromiso A&amp;G
+            Compromiso Altezza
           </span>
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Distinción &amp; Garantía</h3>
         </div>
@@ -193,7 +219,7 @@ export default function Home() {
             Nuestros asesores de alta joyería y maestros perfumistas le asisten en tiempo real.
           </p>
           <a
-            href={whatsappUrl('Hola A&G, deseo una atención a la medida.')}
+            href={whatsappUrl('Hola Altezza, deseo una atención a la medida.')}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full h-11 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(230,194,118,0.25)] active:scale-[0.98] transition-all duration-200"

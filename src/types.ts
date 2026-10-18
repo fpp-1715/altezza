@@ -28,6 +28,7 @@ export interface Product {
   categoryLabel: string
   tagline: string
   description: string
+  weight?: string
   price: number
   oldPrice?: number
   image: string
@@ -48,6 +49,7 @@ export interface Product {
   sizes?: SizeOption[]
   engravable?: boolean
   stockCount?: number
+  active?: boolean
 }
 
 export interface CategoryInfo {

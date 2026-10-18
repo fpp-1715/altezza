@@ -5,7 +5,8 @@ import { BottomNav } from './BottomNav'
 import { Toast } from './Toast'
 
 export function Layout() {
-  const { pathname } = useLocation()
+  const location = useLocation()
+  const { pathname } = location
   const isDetail = pathname.startsWith('/producto/')
   const isHome = pathname === '/'
 
@@ -21,7 +22,9 @@ export function Layout() {
           isDetail ? 'pt-16' : isHome ? 'pt-16' : 'pt-[84px]'
         } ${isDetail ? 'pb-0' : 'pb-24'}`}
       >
-        <Outlet />
+        <div key={`${location.pathname}${location.search}`} className="page-enter">
+          <Outlet />
+        </div>
       </main>
       {!isDetail && <BottomNav />}
       <Toast />

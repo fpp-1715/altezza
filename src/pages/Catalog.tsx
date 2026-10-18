@@ -7,12 +7,16 @@ import { buildCartItem } from '../lib/cart'
 import { formatMoney, whatsappUrl } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
 import { getProducts } from '../services/productService'
-import type { Availability, Product } from '../types'
+import type { Product } from '../types'
 
 const PAGE_SIZE = 6
-const KARATS = [10, 14, 18, 24]
-const METALS = ['Oro Amarillo', 'Oro Blanco', 'Oro Rosa', 'Platino 950']
 const MAX_PRICE = 5000
+const CATALOG_FILTERS = [
+  { key: 'all', label: 'Todas', categories: [] as Product['category'][] },
+  { key: 'oro', label: 'Oro', categories: ['cadenas', 'anillos', 'collares', 'pulseras'] as Product['category'][] },
+  { key: 'relojes', label: 'Relojes', categories: ['relojes'] as Product['category'][] },
+  { key: 'perfumeria', label: 'Perfumes', categories: ['perfumeria'] as Product['category'][] },
+]
 const SORTS = {
   exclusivos: 'Más exclusivos',
   recientes: 'Más recientes',
@@ -68,27 +72,12 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
       </div>
       <div className="p-3 flex flex-col flex-1 justify-between gap-2.5">
         <Link to={`/producto/${product.id}`} className="flex flex-col gap-1">
-          <div className="flex items-center justify-between gap-1">
-            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">
-              {catLabel}
-              {product.sizeLabel ? ` · ${product.sizeLabel}` : ''}
-            </span>
-            <span className="inline-flex items-center gap-1 font-technical-data text-[10px] text-tertiary shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-tertiary" />
-              {product.stockLabel}
-            </span>
-          </div>
+          <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
           <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
             {product.name}
           </h2>
-          <div className="flex items-center gap-1.5">
-            {product.material && (
-              <span className="px-1.5 py-0.5 rounded bg-surface-container text-secondary font-technical-data text-[10px] font-medium">
-                {product.material}
-              </span>
-            )}
-            <span className="font-technical-data text-[11px] text-on-surface-variant">{product.detailLabel}</span>
-          </div>
+          <p className="line-clamp-2 font-technical-data text-[11px] text-on-surface-variant">{product.description}</p>
+          {product.weight && <span className="font-technical-data text-[11px] text-secondary">Peso: {product.weight}</span>}
         </Link>
         <div className="flex flex-col gap-2 pt-1">
           <div className="flex items-baseline justify-between">
@@ -119,14 +108,11 @@ export default function Catalog() {
 
   const cat = params.get('cat') ?? 'all'
   const grupo = params.get('grupo')
-  const sort = (params.get('orden') as SortKey) in SORTS ? (params.get('orden') as SortKey) : 'exclusivos'
+  const sort = (params.get('orden') as SortKey) in SORTS ? (params.get('orden') as SortKey) : 'precio-asc'
 
   const [query, setQuery] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [karat, setKarat] = useState<number | null>(null)
-  const [metal, setMetal] = useState<string | null>(null)
   const [maxPrice, setMaxPrice] = useState(MAX_PRICE)
-  const [availability, setAvailability] = useState<Availability[]>([])
   const [visible, setVisible] = useState(PAGE_SIZE)
   const [loadingMore, setLoadingMore] = useState(false)
   const [wishes, setWishes] = useState<string[]>(() => {
@@ -145,7 +131,7 @@ export default function Catalog() {
     localStorage.setItem('ayg-wishlist', JSON.stringify(wishes))
   }, [wishes])
 
-  useEffect(() => setVisible(PAGE_SIZE), [cat, grupo, sort, query, karat, metal, maxPrice, availability])
+  useEffect(() => setVisible(PAGE_SIZE), [cat, grupo, sort, query, maxPrice])
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params)
@@ -164,13 +150,11 @@ export default function Catalog() {
   const filtered = useMemo(() => {
     const q = normalize(query.trim())
     const list = scoped.filter((p) => {
-      if (cat !== 'all' && p.category !== cat) return false
+      const selectedFilter = CATALOG_FILTERS.find((filter) => filter.key === cat)
+      if (selectedFilter && selectedFilter.key !== 'all' && !selectedFilter.categories.includes(p.category)) return false
       const catLabel = CATEGORIES.find((c) => c.key === p.category)?.label ?? ''
       if (q && !normalize(`${p.name} ${p.title} ${p.categoryLabel} ${catLabel} ${p.material ?? ''} ${p.tagline}`).includes(q)) return false
-      if (karat !== null && p.karat !== karat) return false
-      if (metal && p.metal !== metal) return false
       if (p.price > maxPrice && maxPrice < MAX_PRICE) return false
-      if (availability.length && !availability.includes(p.availability)) return false
       return true
     })
     const sorters: Record<SortKey, (a: Product, b: Product) => number> = {
@@ -179,21 +163,20 @@ export default function Catalog() {
       'precio-desc': (a, b) => b.price - a.price,
       'precio-asc': (a, b) => a.price - b.price,
     }
-    return [...list].sort(sorters[sort])
-  }, [scoped, cat, query, karat, metal, maxPrice, availability, sort])
+    const categoryOrder = CATEGORIES.filter((item) => item.key !== 'all').map((item) => item.key)
+    return [...list].sort((a, b) => {
+      const categoryDifference = categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
+      return categoryDifference || sorters[sort](a, b)
+    })
+  }, [scoped, cat, query, maxPrice, sort])
 
   const activeFilters =
-    (karat !== null ? 1 : 0) + (metal ? 1 : 0) + (maxPrice < MAX_PRICE ? 1 : 0) + (availability.length ? 1 : 0)
+    (cat !== 'all' ? 1 : 0) + (maxPrice < MAX_PRICE ? 1 : 0)
 
   const resetFilters = () => {
-    setKarat(null)
-    setMetal(null)
+    setParam('cat', 'all')
     setMaxPrice(MAX_PRICE)
-    setAvailability([])
   }
-
-  const toggleAvailability = (a: Availability) =>
-    setAvailability((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]))
 
   const loadMore = () => {
     setLoadingMore(true)
@@ -219,7 +202,7 @@ export default function Catalog() {
             Piezas de <span className="italic text-primary font-normal">Alta Gama</span>
           </h1>
           <p className="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
-            Metales preciosos de ley, gemas certificadas y extractos olfativos de autor.
+            Cadenas, alianzas y joyas de oro elaboradas en fábrica, además de relojería y perfumería.
           </p>
         </div>
       </section>
@@ -266,7 +249,7 @@ export default function Catalog() {
           </button>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-2.5 -mx-4 px-4 scroll-smooth">
-          {CATEGORIES.map((c) => {
+          {CATALOG_FILTERS.map((c) => {
             const active = cat === c.key
             return (
               <button
@@ -279,7 +262,7 @@ export default function Catalog() {
                 }`}
               >
                 {c.label}
-                {c.key === 'all' ? ` (${scoped.length})` : ''}
+                {c.key === 'all' ? ` (${scoped.length})` : ` (${scoped.filter((product) => c.categories.includes(product.category)).length})`}
               </button>
             )
           })}
@@ -290,8 +273,8 @@ export default function Catalog() {
         <section className="flex flex-col px-4 py-4 bg-surface-container-lowest">
           <div className="flex items-center justify-between pb-3">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[20px]">filter_vintage</span>
-              <span className="font-title-editorial text-title-editorial text-on-surface">Criterios de Pureza &amp; Metal</span>
+              <span className="material-symbols-outlined text-primary text-[20px]">category</span>
+              <span className="font-title-editorial text-title-editorial text-on-surface">Filtrar productos</span>
             </div>
             <button
               onClick={resetFilters}
@@ -301,29 +284,15 @@ export default function Catalog() {
             </button>
           </div>
           <div className="flex flex-col gap-2 py-2">
-            <span className="font-label-caps text-[10px] text-outline uppercase tracking-wider">Pureza del Oro</span>
+            <span className="font-label-caps text-[10px] text-outline uppercase tracking-wider">Tipo de producto</span>
             <div className="flex flex-wrap gap-2">
-              {KARATS.map((k) => (
+              {CATALOG_FILTERS.map((category) => (
                 <button
-                  key={k}
-                  onClick={() => setKarat(karat === k ? null : k)}
-                  className={`${chipBase} ${karat === k ? chipOn : chipOff}`}
+                  key={category.key}
+                  onClick={() => setParam('cat', category.key)}
+                  className={`${chipBase} ${cat === category.key ? chipOn : chipOff}`}
                 >
-                  {k}K
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 py-2">
-            <span className="font-label-caps text-[10px] text-outline uppercase tracking-wider">Tipo de Metal / Aleación</span>
-            <div className="flex flex-wrap gap-2">
-              {METALS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setMetal(metal === m ? null : m)}
-                  className={`${chipBase} ${metal === m ? 'bg-surface-container text-primary' : 'bg-surface-container-low text-on-surface'}`}
-                >
-                  {m}
+                  {category.label}
                 </button>
               ))}
             </div>
@@ -352,24 +321,6 @@ export default function Catalog() {
               <span>$5,000+</span>
             </div>
           </div>
-          <div className="flex flex-col gap-2 pt-2 pb-1">
-            <span className="font-label-caps text-[10px] text-outline uppercase tracking-wider">Disponibilidad en Bóveda</span>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <button
-                onClick={() => toggleAvailability('boveda')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md ${availability.includes('boveda') ? 'bg-tertiary-container/20 text-tertiary' : 'bg-surface-container-low text-on-surface-variant'}`}
-              >
-                {availability.includes('boveda') && <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />}
-                <span>En Bóveda (Inmediata)</span>
-              </button>
-              <button
-                onClick={() => toggleAvailability('encargo')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md ${availability.includes('encargo') ? 'bg-tertiary-container/20 text-tertiary' : 'bg-surface-container-low text-on-surface-variant'}`}
-              >
-                <span>Por Encargo Atelier</span>
-              </button>
-            </div>
-          </div>
         </section>
       )}
 
@@ -386,7 +337,7 @@ export default function Catalog() {
             <select
               id="catalog-sort"
               value={sort}
-              onChange={(e) => setParam('orden', e.target.value === 'exclusivos' ? null : e.target.value)}
+              onChange={(e) => setParam('orden', e.target.value)}
               className="bg-transparent text-on-surface font-body-sm text-body-sm focus:outline-none cursor-pointer pr-1"
             >
               {Object.entries(SORTS).map(([value, label]) => (
@@ -470,15 +421,15 @@ export default function Catalog() {
               <span className="material-symbols-outlined text-[22px]">support_agent</span>
             </div>
             <div className="flex flex-col">
-              <span className="font-title-editorial text-[15px] text-on-surface">¿Busca una gema particular?</span>
+              <span className="font-title-editorial text-[15px] text-on-surface">¿Busca una pieza en particular?</span>
               <span className="font-body-sm text-[12px] text-on-surface-variant">
-                Nuestros maestros joyeros atienden vía Concierge
+                Escríbenos por WhatsApp y te ayudamos a encontrarla
               </span>
             </div>
           </div>
           <a
             aria-label="Contactar al Concierge Privado"
-            href={whatsappUrl('Hola A&G, busco una pieza particular.')}
+            href={whatsappUrl('Hola Altezza, busco una pieza particular.')}
             target="_blank"
             rel="noopener noreferrer"
             className="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary-fixed transition-colors flex-shrink-0"

@@ -45,14 +45,14 @@ export function FeaturedCard({ product }: { product: Product }) {
           <h3 className="font-title-editorial text-[15px] leading-snug text-on-surface line-clamp-2 mb-1.5 font-medium">
             {product.name}
           </h3>
-          <p className="font-technical-data text-[11px] text-on-surface-variant/80 mb-2">{product.tagline}</p>
+          <p className="font-technical-data text-[11px] text-on-surface-variant/80 mb-2 line-clamp-2">{product.description}</p>
         </div>
         <div className="pt-2 flex items-baseline justify-between bg-surface-container-low/50 -mx-3.5 -mb-3.5 px-3.5 py-2.5">
           <span className="font-headline-sm text-[16px] text-primary font-semibold">
             {formatMoney(product.price)}{' '}
             <span className="font-technical-data text-[10px] font-normal text-on-surface-variant">USD</span>
           </span>
-          <span className="font-technical-data text-[10px] text-secondary">{product.detailLabel}</span>
+          {product.weight && <span className="font-technical-data text-[10px] text-secondary">Peso: {product.weight}</span>}
         </div>
       </Link>
     </article>
