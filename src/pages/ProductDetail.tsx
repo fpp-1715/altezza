@@ -488,7 +488,7 @@ function ProductView({ product }: { product: Product }) {
 
 export default function ProductDetail() {
   const { id = '' } = useParams()
-  const { data: product, loading } = useAsync(() => getProduct(id), [id])
+  const { data: product, loading, error } = useAsync(() => getProduct(id), [id])
 
   useEffect(() => {
     if (product) document.title = `${product.name} — ${BRAND.name}`
@@ -499,6 +499,19 @@ export default function ProductDetail() {
 
   if (loading) {
     return <div className="px-4 pt-6"><div className="aspect-[4/5] rounded-xl bg-surface-container animate-pulse" /></div>
+  }
+
+  if (error) {
+    return (
+      <div role="alert" className="flex flex-col items-center text-center gap-3 px-6 py-24">
+        <span className="material-symbols-outlined text-[44px] text-outline">cloud_off</span>
+        <h1 className="font-headline-sm text-headline-sm text-on-surface">No pudimos cargar esta pieza</h1>
+        <p className="font-body-sm text-body-sm text-on-surface-variant">{error.message}</p>
+        <Link to="/catalogo" className="font-label-caps text-label-caps text-primary uppercase tracking-wider">
+          Volver al catálogo
+        </Link>
+      </div>
+    )
   }
 
   if (!product) {

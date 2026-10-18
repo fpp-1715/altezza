@@ -103,7 +103,7 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
 
 export default function Catalog() {
   const [params, setParams] = useSearchParams()
-  const { data: products, loading } = useAsync(getProducts, [])
+  const { data: products, loading, error } = useAsync(getProducts, [])
   const searchRef = useRef<HTMLInputElement>(null)
 
   const cat = params.get('cat') ?? 'all'
@@ -356,6 +356,12 @@ export default function Catalog() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] rounded-xl bg-surface-container-low animate-pulse" />
             ))}
+          </div>
+        ) : error ? (
+          <div role="alert" className="flex flex-col items-center text-center gap-2 py-16 text-on-surface-variant">
+            <span className="material-symbols-outlined text-[40px] text-outline">cloud_off</span>
+            <p className="font-title-editorial text-title-editorial text-on-surface">No pudimos cargar el catálogo</p>
+            <p className="font-body-sm text-body-sm">{error.message}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center text-center gap-2 py-16 text-on-surface-variant">

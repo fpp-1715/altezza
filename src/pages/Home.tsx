@@ -13,7 +13,7 @@ const PILLARS = [
 ]
 
 export default function Home() {
-  const { data: featured } = useAsync(getFeaturedProducts, [])
+  const { data: featured, loading: featuredLoading, error: featuredError } = useAsync(getFeaturedProducts, [])
 
   return (
     <div className="flex flex-col w-full">
@@ -116,7 +116,11 @@ export default function Home() {
           </Link>
         </div>
         <div className="flex snap-x gap-3 overflow-x-auto px-0 pb-1 no-scrollbar">
-          {featured
+          {featuredError ? (
+            <p role="alert" className="py-4 font-body-sm text-body-sm text-on-surface-variant">
+              No pudimos cargar los productos destacados desde Supabase: {featuredError.message}
+            </p>
+          ) : featured
             ? featured.map((product) => (
                 <Link
                   key={product.id}
@@ -145,9 +149,9 @@ export default function Home() {
                   </div>
                 </Link>
               ))
-            : Array.from({ length: 4 }).map((_, i) => (
+            : featuredLoading ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-48 w-36 shrink-0 rounded-xl bg-surface-container animate-pulse" />
-              ))}
+              )) : null}
         </div>
       </section>
 

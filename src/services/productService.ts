@@ -1,84 +1,54 @@
-import { CATEGORIES, PRODUCTS } from '../data/products'
+import { CATEGORIES } from '../data/products'
 import type { CategoryInfo, Product } from '../types'
 import { supabase } from '../lib/supabase'
 
-// Almacenamiento local persistente para soporte CRUD completo
-const STORAGE_KEY = 'ayg_products_v1'
-
-function loadStoredProducts(): Product[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) {
-        return parsed
-      }
-    }
-  } catch (err) {
-    console.error('Error loading products from localStorage:', err)
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase no está configurado. No es posible cargar productos sin conexión a la base de datos.')
   }
-  return [...PRODUCTS]
+  return supabase
 }
-
-function saveStoredProducts(items: Product[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-}
-
-let memoryProducts: Product[] = loadStoredProducts()
 
 const delay = <T,>(value: T, ms = 80): Promise<T> =>
   new Promise((resolve) => setTimeout(() => resolve(value), ms))
 
 export async function getProducts(): Promise<Product[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').select('*').eq('active', true).or('stock_count.is.null,stock_count.gt.0')
-    if (error) throw presentDatabaseError(error)
-    return (data ?? []).map(fromDatabase)
-  }
-  return delay(memoryProducts.filter((product) => product.active !== false && product.stockCount !== 0))
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').select('*').eq('active', true).or('stock_count.is.null,stock_count.gt.0')
+  if (error) throw presentDatabaseError(error)
+  return (data ?? []).map(fromDatabase)
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').select('*')
-    if (error) throw presentDatabaseError(error)
-    return (data ?? []).map(fromDatabase)
-  }
-  return delay([...memoryProducts])
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').select('*')
+  if (error) throw presentDatabaseError(error)
+  return (data ?? []).map(fromDatabase)
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').select('*').eq('id', id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').maybeSingle()
-    if (error) throw presentDatabaseError(error)
-    return data ? fromDatabase(data) : null
-  }
-  return delay(memoryProducts.find((p) => p.id === id && p.active !== false && p.stockCount !== 0) ?? null)
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').select('*').eq('id', id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').maybeSingle()
+  if (error) throw presentDatabaseError(error)
+  return data ? fromDatabase(data) : null
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').select('*').eq('featured', true).eq('active', true).or('stock_count.is.null,stock_count.gt.0')
-    if (error) throw presentDatabaseError(error)
-    return (data ?? []).map(fromDatabase)
-  }
-  return delay(memoryProducts.filter((p) => p.featured && p.active !== false && p.stockCount !== 0))
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').select('*').eq('featured', true).eq('active', true).or('stock_count.is.null,stock_count.gt.0')
+  if (error) throw presentDatabaseError(error)
+  return (data ?? []).map(fromDatabase)
 }
 
 export async function getRelatedProducts(product: Product, limit = 3): Promise<Product[]> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').select('*').neq('id', product.id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').limit(limit * 3)
-    if (error) throw presentDatabaseError(error)
-    const others = (data ?? []).map(fromDatabase)
-    return [
-      ...others.filter((item) => item.category !== product.category),
-      ...others.filter((item) => item.category === product.category),
-    ].slice(0, limit)
-  }
-  const others = memoryProducts.filter((p) => p.id !== product.id && p.active !== false && p.stockCount !== 0)
-  const different = others.filter((p) => p.category !== product.category)
-  const same = others.filter((p) => p.category === product.category)
-  return delay([...different, ...same].slice(0, limit))
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').select('*').neq('id', product.id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').limit(limit * 3)
+  if (error) throw presentDatabaseError(error)
+  const others = (data ?? []).map(fromDatabase)
+  return [
+    ...others.filter((item) => item.category !== product.category),
+    ...others.filter((item) => item.category === product.category),
+  ].slice(0, limit)
 }
 
 export async function getCategories(): Promise<CategoryInfo[]> {
@@ -218,60 +188,29 @@ function presentDatabaseError(error: { code?: string; message: string }) {
 
 // Operaciones CRUD para el panel de administración
 export async function createProduct(product: Product): Promise<Product> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').insert(toDatabase(product)).select('*').single()
-    if (error) throw presentDatabaseError(error)
-    return fromDatabase(data)
-  }
-  if (memoryProducts.some((item) => item.sku.toLowerCase() === product.sku.toLowerCase())) {
-    throw new Error(`Ya existe un producto con el SKU ${product.sku}.`)
-  }
-  const nextProducts = [product, ...memoryProducts]
-  saveStoredProducts(nextProducts)
-  memoryProducts = nextProducts
-  return delay(product)
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').insert(toDatabase(product)).select('*').single()
+  if (error) throw presentDatabaseError(error)
+  return fromDatabase(data)
 }
 
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').update(toDatabase(updates)).eq('id', id).select('*').maybeSingle()
-    if (error) throw presentDatabaseError(error)
-    return data ? fromDatabase(data) : null
-  }
-  const index = memoryProducts.findIndex((p) => p.id === id)
-  if (index === -1) return null
-  const updated = { ...memoryProducts[index], ...updates }
-  if (memoryProducts.some((item) => item.id !== id && item.sku.toLowerCase() === updated.sku.toLowerCase())) {
-    throw new Error(`Ya existe un producto con el SKU ${updated.sku}.`)
-  }
-  const nextProducts = [...memoryProducts]
-  nextProducts[index] = updated
-  saveStoredProducts(nextProducts)
-  memoryProducts = nextProducts
-  return delay(updated)
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').update(toDatabase(updates)).eq('id', id).select('*').maybeSingle()
+  if (error) throw presentDatabaseError(error)
+  return data ? fromDatabase(data) : null
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  if (supabase) {
-    const { data, error } = await supabase.from('products').delete().eq('id', id).select('id')
-    if (error) throw presentDatabaseError(error)
-    return Boolean(data?.length)
-  }
-  const prevLen = memoryProducts.length
-  const nextProducts = memoryProducts.filter((p) => p.id !== id)
-  if (nextProducts.length !== prevLen) {
-    saveStoredProducts(nextProducts)
-    memoryProducts = nextProducts
-    return delay(true)
-  }
-
-  return delay(false)
+  const client = requireSupabase()
+  const { data, error } = await client.from('products').delete().eq('id', id).select('id')
+  if (error) throw presentDatabaseError(error)
+  return Boolean(data?.length)
 }
 
 export async function duplicateProduct(id: string): Promise<Product | null> {
-  const original = supabase
-    ? await getProduct(id)
-    : memoryProducts.find((p) => p.id === id)
+  requireSupabase()
+  const original = await getProduct(id)
   if (!original) return null
   const newId = `${original.id}-copy-${Date.now().toString(36)}`
   const cloned: Product = {
