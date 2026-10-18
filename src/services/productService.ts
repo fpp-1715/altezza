@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 function requireSupabase() {
   if (!supabase) {
-    throw new Error('Supabase no está configurado. No es posible cargar productos sin conexión a la base de datos.')
+    throw new Error('Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY (o VITE_SUPABASE_PUBLISHABLE_KEY) en Vercel y vuelve a desplegar.')
   }
   return supabase
 }

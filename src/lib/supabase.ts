@@ -11,10 +11,11 @@ function getSupabaseProjectUrl(configuredUrl: string | undefined) {
 }
 
 const supabaseUrl = getSupabaseProjectUrl(import.meta.env.VITE_SUPABASE_URL)
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+const supabaseKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = supabaseUrl && supabasePublishableKey
-  ? createClient(supabaseUrl, supabasePublishableKey)
+export const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
   : null
 
 export const isSupabaseConfigured = supabase !== null
