@@ -231,7 +231,6 @@ export default function AdminProductoForm() {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
             className="block min-h-12 w-full rounded-lg bg-surface-container-lowest text-sm text-on-surface file:mr-3 file:min-h-12 file:border-0 file:bg-primary file:px-3 file:font-medium file:text-on-primary"
           />

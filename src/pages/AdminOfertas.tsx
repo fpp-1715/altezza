@@ -117,7 +117,7 @@ export default function AdminOfertas() {
           </div>
           <input value={form.discount_label} onChange={(e) => setForm({ ...form, discount_label: e.target.value })} placeholder="Etiqueta del descuento (opcional)" className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline" />
           <label className="block space-y-1 text-xs text-on-surface-variant">Foto del combo (opcional)
-            <input type="file" accept="image/*" capture="environment" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-lg bg-surface-container-lowest text-sm text-on-surface file:mr-3 file:min-h-11 file:border-0 file:bg-primary file:px-3 file:font-medium file:text-on-primary" />
+            <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-lg bg-surface-container-lowest text-sm text-on-surface file:mr-3 file:min-h-11 file:border-0 file:bg-primary file:px-3 file:font-medium file:text-on-primary" />
           </label>
           {imagePreview && <img src={imagePreview} alt="Vista previa de la foto del combo" className="aspect-[16/9] w-full rounded-lg object-cover" />}
           <fieldset className="space-y-2">
