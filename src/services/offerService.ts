@@ -95,6 +95,68 @@ export async function createOffer(input: Omit<OfferRecord, 'id' | 'product_ids'>
   }
 }
 
+export function offerToProduct(offer: OfferRecord): Product {
+  return {
+    id: offer.id,
+    sku: `offer-${offer.id}`,
+    name: offer.name,
+    title: offer.name,
+    category: 'ofertas',
+    categoryLabel: 'Oferta',
+    tagline: offer.subtitle,
+    description: offer.description || offer.subtitle,
+    price: Number(offer.offer_price),
+    oldPrice: Number(offer.original_price),
+    image: offer.image_url ?? 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?auto=format&fit=crop&w=900&q=80',
+    badge: offer.discount_label || 'Oferta',
+    material: undefined,
+    detailLabel: offer.discount_label || 'Oferta',
+    availability: 'boveda',
+    stockLabel: 'Oferta activa',
+    featured: true,
+    exclusivity: 0,
+    createdAt: new Date().toISOString(),
+    specs: [],
+  }
+}
+
+export async function updateOffer(id: string, input: Omit<OfferRecord, 'id' | 'product_ids'>, productIds: string[]) {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+  if (productIds.length < 2) throw new Error('Selecciona al menos dos productos para el combo.')
+
+  const payload = {
+    name: input.name,
+    subtitle: input.subtitle,
+    description: input.description,
+    discount_label: input.discount_label,
+    original_price: input.original_price,
+    offer_price: input.offer_price,
+    image_url: input.image_url,
+    status: input.status,
+  }
+
+  const { error: offerError } = await supabase.from('offers').update(payload).eq('id', id)
+  if (offerError) throw dbError(offerError)
+
+  const { error: deleteError } = await supabase.from('offer_products').delete().eq('offer_id', id)
+  if (deleteError) throw dbError(deleteError)
+
+  const { error: linksError } = await supabase.from('offer_products').insert(
+    productIds.map((product_id) => ({ offer_id: id, product_id, quantity: 1 })),
+  )
+  if (linksError) throw dbError(linksError)
+}
+
+export async function deleteOffer(id: string) {
+  if (!supabase) throw new Error('Supabase no está configurado.')
+
+  const { error: linksError } = await supabase.from('offer_products').delete().eq('offer_id', id)
+  if (linksError) throw dbError(linksError)
+
+  const { error } = await supabase.from('offers').delete().eq('id', id)
+  if (error) throw dbError(error)
+}
+
 export function getOfferProductNames(offer: OfferRecord, products: Product[]) {
   return offer.product_ids.map((id) => products.find((product) => product.id === id)?.name ?? id)
 }

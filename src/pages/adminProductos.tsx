@@ -132,8 +132,12 @@ export default function AdminProductos() {
                   <p className="mt-0.5 line-clamp-2 font-body-sm text-[12px] text-on-surface-variant">{product.description}</p>
                 </div>
                 <div className="mt-2 flex items-baseline justify-between gap-2">
-                  <span className="font-headline-sm text-[19px] font-semibold text-primary">{formatMoney(product.price)} <span className="font-technical-data text-[10px] font-normal text-outline">USD</span></span>
-                  {product.weight && <span className="shrink-0 font-technical-data text-[10px] text-on-surface-variant">Peso: {product.weight}</span>}
+                  <div>
+                    {product.oldPrice && <span className="block font-label-caps text-[9px] uppercase tracking-wider text-secondary">Oferta</span>}
+                    <span className="font-headline-sm text-[19px] font-semibold text-primary">{formatMoney(product.price)} <span className="font-technical-data text-[10px] font-normal text-outline">USD</span></span>
+                    {product.oldPrice && <span className="ml-1.5 font-technical-data text-[10px] text-on-surface-variant line-through">{formatMoney(product.oldPrice)}</span>}
+                  </div>
+                  {product.weight && <span className="shrink-0 font-technical-data text-[10px] text-on-surface-variant">Peso: {product.weight} g</span>}
                 </div>
               </div>
             </div>

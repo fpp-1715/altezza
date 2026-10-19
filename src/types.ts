@@ -1,10 +1,5 @@
-export type CategoryKey =
-  | 'cadenas'
-  | 'anillos'
-  | 'collares'
-  | 'pulseras'
-  | 'relojes'
-  | 'perfumeria'
+export type CategoryKey = string
+export type CategoryKind = 'oro' | 'relojes' | 'perfumeria'
 
 export type Availability = 'boveda' | 'encargo'
 

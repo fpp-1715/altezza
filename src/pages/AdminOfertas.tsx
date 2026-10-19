@@ -1,20 +1,30 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatMoney } from '../lib/config'
-import { getProducts } from '../services/productService'
-import { uploadProductImage } from '../services/productService'
-import { createOffer, getOfferProductNames, getOffers, setOfferStatus } from '../services/offerService'
+import { getProducts, uploadProductImage } from '../services/productService'
+import { createOffer, deleteOffer, getOfferProductNames, getOffers, setOfferStatus, updateOffer } from '../services/offerService'
 import type { OfferRecord } from '../services/offerService'
 import type { Product } from '../types'
 
-const emptyOffer = {
+type OfferForm = {
+  name: string
+  subtitle: string
+  description: string
+  discount_label: string
+  original_price: number
+  offer_price: number
+  image_url: string | null
+  status: 'active' | 'paused'
+}
+
+const emptyOffer: OfferForm = {
   name: '',
   subtitle: '',
   description: '',
   discount_label: '',
   original_price: 0,
   offer_price: 0,
-  image_url: null as string | null,
-  status: 'paused' as const,
+  image_url: null,
+  status: 'paused',
 }
 
 export default function AdminOfertas() {
@@ -25,9 +35,64 @@ export default function AdminOfertas() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
   const [creating, setCreating] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [selectorOpen, setSelectorOpen] = useState(false)
+  const [selectorQuery, setSelectorQuery] = useState('')
+  const [selectorCategory, setSelectorCategory] = useState<'all' | string>('all')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const selectorOptions = useMemo(
+    () => ['all', ...new Set(products.map((product) => product.category))],
+    [products],
+  )
+
+  const filteredSelectorProducts = useMemo(() => {
+    const term = selectorQuery.trim().toLowerCase()
+    return products.filter((product) => {
+      const matchesCategory = selectorCategory === 'all' || product.category === selectorCategory
+      const matchesQuery = !term || `${product.name} ${product.title} ${product.categoryLabel}`.toLowerCase().includes(term)
+      return matchesCategory && matchesQuery
+    })
+  }, [products, selectorCategory, selectorQuery])
+
+  const resetForm = () => {
+    setForm(emptyOffer)
+    setImageFile(null)
+    setImagePreview('')
+    setSelectedProducts([])
+    setEditingId(null)
+    setSelectorOpen(false)
+    setSelectorQuery('')
+    setSelectorCategory('all')
+  }
+
+  const openCreateForm = () => {
+    resetForm()
+    setCreating(true)
+  }
+
+  const openEditForm = (offer: OfferRecord) => {
+    setForm({
+      name: offer.name,
+      subtitle: offer.subtitle,
+      description: offer.description,
+      discount_label: offer.discount_label,
+      original_price: offer.original_price,
+      offer_price: offer.offer_price,
+      image_url: offer.image_url,
+      status: offer.status,
+    })
+    setSelectedProducts(offer.product_ids)
+    setImageFile(null)
+    setImagePreview(offer.image_url ?? '')
+    setEditingId(offer.id)
+    setCreating(true)
+    setSelectorOpen(false)
+    setSelectorQuery('')
+    setSelectorCategory('all')
+  }
 
   const reload = async () => {
     setLoading(true)
@@ -49,7 +114,7 @@ export default function AdminOfertas() {
 
   useEffect(() => {
     if (!imageFile) {
-      setImagePreview('')
+      setImagePreview((current) => current)
       return
     }
     const previewUrl = URL.createObjectURL(imageFile)
@@ -68,20 +133,49 @@ export default function AdminOfertas() {
     }
   }
 
+  const toggleSelectedProduct = (productId: string) => {
+    setSelectedProducts((current) => current.includes(productId) ? current.filter((id) => id !== productId) : [...current, productId])
+  }
+
+  const removeOffer = async (offer: OfferRecord) => {
+    const confirmed = window.confirm(`¿Seguro que quieres eliminar el combo "${offer.name}"?`)
+    if (!confirmed) return
+    setError('')
+    try {
+      await deleteOffer(offer.id)
+      setOffers((current) => current.filter((item) => item.id !== offer.id))
+      if (editingId === offer.id) {
+        setCreating(false)
+        resetForm()
+      }
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'No se pudo eliminar el combo.')
+    }
+  }
+
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
     setSaving(true)
     try {
-      const imageUrl = imageFile ? await uploadProductImage(imageFile) : null
-      await createOffer({ ...form, image_url: imageUrl }, selectedProducts)
-      setForm(emptyOffer)
-      setImageFile(null)
-      setSelectedProducts([])
+      if (selectedProducts.length < 2) {
+        throw new Error('Selecciona al menos dos productos para crear un combo.')
+      }
+
+      const imageUrl = imageFile ? await uploadProductImage(imageFile) : form.image_url ?? null
+      const payload = { ...form, image_url: imageUrl }
+
+      if (editingId) {
+        await updateOffer(editingId, payload, selectedProducts)
+      } else {
+        await createOffer(payload, selectedProducts)
+      }
+
       setCreating(false)
+      resetForm()
       await reload()
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : 'No se pudo crear el combo.')
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'No se pudo guardar el combo.')
     } finally {
       setSaving(false)
     }
@@ -94,7 +188,7 @@ export default function AdminOfertas() {
           <span className="mb-1 block font-label-caps text-[10px] uppercase tracking-widest text-secondary">Campañas de temporada</span>
           <h1 className="font-headline-lg-mobile text-[28px] leading-9 text-on-surface">Ofertas &amp; Combos</h1>
         </div>
-        <button onClick={() => setCreating((current) => !current)} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary">
+        <button onClick={() => (creating ? setCreating(false) : openCreateForm())} className="flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary">
           <span className="material-symbols-outlined text-[18px]">{creating ? 'close' : 'add'}</span>{creating ? 'Cerrar' : 'Crear combo'}
         </button>
       </header>
@@ -103,7 +197,7 @@ export default function AdminOfertas() {
 
       {creating && (
         <form onSubmit={submit} className="space-y-3 rounded-xl bg-surface-container p-4">
-          <h2 className="font-title-editorial text-lg text-on-surface">Nuevo combo</h2>
+          <h2 className="font-title-editorial text-lg text-on-surface">{editingId ? 'Editar combo' : 'Nuevo combo'}</h2>
           <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre del combo" className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline" />
           <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Subtítulo (opcional)" className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline" />
           <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles de la oferta" rows={3} className="w-full rounded-lg bg-surface-container-lowest px-3 py-2 text-on-surface placeholder:text-outline" />
@@ -120,18 +214,93 @@ export default function AdminOfertas() {
             <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-lg bg-surface-container-lowest text-sm text-on-surface file:mr-3 file:min-h-11 file:border-0 file:bg-primary file:px-3 file:font-medium file:text-on-primary" />
           </label>
           {imagePreview && <img src={imagePreview} alt="Vista previa de la foto del combo" className="aspect-[16/9] w-full rounded-lg object-cover" />}
-          <fieldset className="space-y-2">
-            <legend className="font-label-caps text-[10px] uppercase tracking-wider text-on-surface-variant">Productos incluidos — selecciona al menos dos</legend>
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg bg-surface-container-lowest p-2">
-              {products.map((product) => (
-                <label key={product.id} className="flex min-h-10 items-center gap-2 px-1 text-sm text-on-surface">
-                  <input type="checkbox" checked={selectedProducts.includes(product.id)} onChange={(event) => setSelectedProducts((current) => event.target.checked ? [...current, product.id] : current.filter((id) => id !== product.id))} className="h-4 w-4 accent-primary" />
-                  <span className="flex-1 truncate">{product.name}</span><span className="text-xs text-primary">{formatMoney(product.price)}</span>
-                </label>
-              ))}
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-label-caps text-[10px] uppercase tracking-wider text-on-surface-variant">Productos del combo</span>
+              <button type="button" onClick={() => setSelectorOpen(true)} className="rounded-lg bg-surface-container-high px-3 py-2 text-xs font-medium text-primary">
+                {selectedProducts.length ? `${selectedProducts.length} seleccionados` : 'Seleccionar productos'}
+              </button>
             </div>
-          </fieldset>
-          <button disabled={saving} type="submit" className="min-h-12 w-full rounded-lg bg-primary font-semibold text-on-primary disabled:opacity-60">{saving ? 'Guardando…' : 'Guardar combo'}</button>
+            {selectedProducts.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedProducts.map((selectedId) => {
+                  const product = products.find((item) => item.id === selectedId)
+                  if (!product) return null
+                  return (
+                    <button key={selectedId} type="button" onClick={() => toggleSelectedProduct(selectedId)} className="rounded-full border border-primary/30 bg-primary/8 px-2 py-1 text-[10px] text-on-surface">
+                      {product.name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {selectorOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+              <div className="w-full max-w-4xl rounded-2xl bg-surface-container p-4 shadow-2xl">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h3 className="font-title-editorial text-base text-on-surface">Selecciona los productos del combo</h3>
+                  <button type="button" onClick={() => setSelectorOpen(false)} className="rounded-lg bg-surface-container-high px-3 py-2 text-sm font-medium text-on-surface">Cerrar</button>
+                </div>
+
+                <div className="mb-3 flex flex-col gap-3">
+                  <input
+                    value={selectorQuery}
+                    onChange={(e) => setSelectorQuery(e.target.value)}
+                    placeholder="Buscar por nombre o categoría"
+                    className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {selectorOptions.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setSelectorCategory(option)}
+                        className={`rounded-full px-3 py-1.5 text-[11px] uppercase tracking-wide ${selectorCategory === option ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}
+                      >
+                        {option === 'all' ? 'Todas' : option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">
+                  {filteredSelectorProducts.map((product) => {
+                    const selected = selectedProducts.includes(product.id)
+                    return (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => toggleSelectedProduct(product.id)}
+                        className={`overflow-hidden rounded-xl border text-left transition-all ${selected ? 'border-primary bg-primary/5' : 'border-outline-variant/30 bg-surface-container-low'}`}
+                      >
+                        <div className="relative">
+                          <img src={product.image} alt={product.name} className="aspect-square w-full object-cover" />
+                          {selected && <span className="absolute right-2 top-2 rounded-full bg-primary px-2 py-1 text-[9px] font-bold uppercase text-on-primary">Seleccionado</span>}
+                        </div>
+                        <div className="space-y-1 p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] uppercase tracking-wider text-primary">{product.categoryLabel}</span>
+                            <span className="text-[10px] text-on-surface-variant">{formatMoney(product.price)}</span>
+                          </div>
+                          <p className="line-clamp-2 text-sm text-on-surface">{product.name}</p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <span className="text-sm text-on-surface-variant">{selectedProducts.length} productos seleccionados</span>
+                  <button type="button" onClick={() => setSelectorOpen(false)} className="min-h-11 rounded-lg bg-primary px-4 font-medium text-on-primary">Listo</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <button disabled={saving} type="submit" className="min-h-12 w-full rounded-lg bg-primary font-semibold text-on-primary disabled:opacity-60">{saving ? 'Guardando…' : editingId ? 'Actualizar combo' : 'Guardar combo'}</button>
         </form>
       )}
 
@@ -155,9 +324,17 @@ export default function AdminOfertas() {
               <span className="font-headline-sm text-xl font-bold text-primary">{formatMoney(offer.offer_price)} USD</span>
               <span className="text-xs text-outline line-through">{formatMoney(offer.original_price)} USD</span>
             </div>
-            <button onClick={() => void toggleStatus(offer)} className="min-h-11 w-full rounded-lg bg-surface-container-high text-sm font-medium text-primary">
-              {offer.status === 'active' ? 'Pausar oferta' : 'Activar oferta'}
-            </button>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => void toggleStatus(offer)} className="min-h-11 rounded-lg bg-surface-container-high text-sm font-medium text-primary">
+                {offer.status === 'active' ? 'Pausar' : 'Activar'}
+              </button>
+              <button onClick={() => openEditForm(offer)} className="min-h-11 rounded-lg bg-surface-container-high text-sm font-medium text-on-surface">
+                Editar
+              </button>
+              <button onClick={() => void removeOffer(offer)} className="col-span-2 min-h-11 rounded-lg border border-error/40 bg-error-container/10 text-sm font-medium text-error">
+                Eliminar combo
+              </button>
+            </div>
           </div>
         </article>
       ))}

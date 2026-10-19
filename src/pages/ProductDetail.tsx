@@ -74,8 +74,10 @@ function Related({ product }: { product: Product }) {
             <div className="p-3 flex flex-col gap-1 flex-1">
               <span className="font-label-caps text-[10px] text-outline uppercase tracking-wider">{r.categoryLabel}</span>
               <h4 className="font-title-editorial text-[14px] leading-snug text-on-surface line-clamp-2">{r.name}</h4>
-              <span className="font-headline-sm text-[15px] text-primary font-semibold mt-auto pt-1">
-                {formatMoney(r.price)} USD
+              <span className="mt-auto pt-1">
+                {r.oldPrice && <span className="block font-label-caps text-[9px] uppercase tracking-wider text-secondary">Oferta</span>}
+                <span className="font-headline-sm text-[15px] text-primary font-semibold">{formatMoney(r.price)} USD</span>
+                {r.oldPrice && <span className="ml-1.5 font-technical-data text-[10px] text-on-surface-variant line-through">{formatMoney(r.oldPrice)} USD</span>}
               </span>
               <span className="mt-2 h-8 rounded-lg bg-surface-container-high text-on-surface font-label-md text-[12px] flex items-center justify-center">
                 Ver detalles
@@ -265,6 +267,12 @@ function ProductView({ product }: { product: Product }) {
                     </button>
                   )
                 })}
+              </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-start gap-2">
+                <span className="material-symbols-outlined text-[18px] text-primary mt-0.5">verified</span>
+                <p className="font-technical-data text-technical-data text-on-surface-variant leading-relaxed">
+                  Garantizamos que cada pieza de oro es de oro de por vida.
+                </p>
               </div>
             </div>
           )}

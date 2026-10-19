@@ -1,5 +1,5 @@
 import { CATEGORIES } from '../data/products'
-import type { CategoryInfo, Product } from '../types'
+import type { CategoryInfo, CategoryKind, Product } from '../types'
 import { supabase } from '../lib/supabase'
 
 function requireSupabase() {
@@ -63,36 +63,97 @@ export async function getCategories(): Promise<CategoryInfo[]> {
   return delay(CATEGORIES)
 }
 
-export type AdminCategory = { id: Product['category']; name: string; sort_order: number; active: boolean }
+export type AdminCategory = { id: Product['category']; name: string; sort_order: number; active: boolean; kind?: CategoryKind }
+
+function inferCategoryKind(id: string): CategoryKind {
+  const normalized = String(id).toLowerCase()
+  if (normalized.includes('reloj')) return 'relojes'
+  if (normalized.includes('perfume') || normalized.includes('perfumeria')) return 'perfumeria'
+  return 'oro'
+}
 
 export async function getAdminCategories(): Promise<AdminCategory[]> {
   if (!supabase) return CATEGORIES.filter((item) => item.key !== 'all').map((item, index) => ({
-    id: item.key as Product['category'], name: item.label, sort_order: index, active: true,
+    id: item.key as Product['category'], name: item.label, sort_order: index, active: true, kind: inferCategoryKind(item.key),
   }))
-  const { data, error } = await supabase.from('categories').select('id, name, sort_order, active').order('sort_order')
-  if (error) throw presentDatabaseError(error)
+
+  const { data, error } = await supabase.from('categories').select('id, name, sort_order, active, kind').order('sort_order')
+  if (error) {
+    if (error.message.toLowerCase().includes('kind') || error.message.toLowerCase().includes('column')) {
+      const { data: legacyData, error: legacyError } = await supabase.from('categories').select('id, name, sort_order, active').order('sort_order')
+      if (legacyError) throw presentDatabaseError(legacyError)
+      return (legacyData ?? []).map((item) => ({
+        id: item.id as Product['category'],
+        name: String(item.name),
+        sort_order: Number(item.sort_order),
+        active: Boolean(item.active),
+        kind: inferCategoryKind(String(item.id)),
+      }))
+    }
+    throw presentDatabaseError(error)
+  }
+
   return (data ?? []).map((item) => ({
     id: item.id as Product['category'],
     name: String(item.name),
     sort_order: Number(item.sort_order),
     active: Boolean(item.active),
+    kind: (item.kind as CategoryKind | undefined) ?? inferCategoryKind(String(item.id)),
   }))
 }
 
-export async function updateCategory(id: Product['category'], changes: { name?: string; active?: boolean }) {
+export async function updateCategory(id: Product['category'], changes: { name?: string; active?: boolean; kind?: CategoryKind }) {
   if (!supabase) throw new Error('La gestión de categorías requiere conexión con Supabase.')
-  const { error } = await supabase.from('categories').update(changes).eq('id', id)
-  if (error) throw presentDatabaseError(error)
+  const payload = { ...changes }
+  if (payload.kind === undefined) delete payload.kind
+
+  try {
+    const { error } = await supabase.from('categories').update(payload).eq('id', id)
+    if (error) throw presentDatabaseError(error)
+  } catch (error) {
+    if (error instanceof Error && /kind|column/i.test(error.message)) {
+      const { error: fallbackError } = await supabase.from('categories').update({ name: payload.name, active: payload.active }).eq('id', id)
+      if (fallbackError) throw presentDatabaseError(fallbackError)
+      return
+    }
+    throw error
+  }
 }
 
 export async function createCategory(category: AdminCategory) {
   if (!supabase) throw new Error('La gestión de categorías requiere conexión con Supabase.')
-  const { error } = await supabase.from('categories').insert(category)
+  const payload = { ...category }
+  try {
+    const { error } = await supabase.from('categories').insert(payload)
+    if (error) throw presentDatabaseError(error)
+  } catch (error) {
+    if (error instanceof Error && /kind|column/i.test(error.message)) {
+      const { error: fallbackError } = await supabase.from('categories').insert({
+        id: category.id,
+        name: category.name,
+        sort_order: category.sort_order,
+        active: category.active,
+      })
+      if (fallbackError) throw presentDatabaseError(fallbackError)
+      return
+    }
+    throw error
+  }
+}
+
+export async function countProductsInCategory(id: Product['category']): Promise<number> {
+  if (!supabase) return 0
+  const { count, error } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('category_id', id)
   if (error) throw presentDatabaseError(error)
+  return Number(count ?? 0)
 }
 
 export async function deleteCategory(id: Product['category']) {
   if (!supabase) throw new Error('La gestión de categorías requiere conexión con Supabase.')
+  const productCount = await countProductsInCategory(id)
+  if (productCount > 0) {
+    throw new Error(`No se puede eliminar esta categoría porque tiene ${productCount} producto(s) asociado(s).`)
+  }
   const { error } = await supabase.from('categories').delete().eq('id', id)
   if (error) throw presentDatabaseError(error)
 }
@@ -149,21 +210,63 @@ function toDatabase(product: Partial<Product>) {
     ['engravable', 'engravable'],
   ]
   for (const [key, column] of fields) {
-    if (key in product) row[column] = product[key]
+    if (key in product) {
+      row[column] = key === 'oldPrice' && product[key] === undefined ? null : product[key]
+    }
   }
   if ('createdAt' in product) row.created_at = product.createdAt
   return row
 }
 
-export async function uploadProductImage(file: File): Promise<string> {
-  if (!supabase) throw new Error('Supabase no está configurado; no se puede subir la imagen.')
+async function compressProductImage(file: File): Promise<Blob> {
   if (!file.type.startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido.')
 
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(file)
+  } catch {
+    throw new Error('No se pudo abrir esta imagen. Prueba con una foto JPG, PNG o WebP.')
+  }
+
+  try {
+    const maxDimension = 1400
+    let scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('El navegador no pudo preparar la imagen.')
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob(
+          (result) => result ? resolve(result) : reject(new Error('No se pudo comprimir la imagen.')),
+          'image/webp',
+          Math.max(0.68, 0.84 - attempt * 0.05),
+        )
+      })
+      if (blob.size <= 500 * 1024 || attempt === 3) return blob
+      scale *= 0.82
+    }
+  } finally {
+    bitmap.close()
+  }
+
+  throw new Error('No se pudo comprimir la imagen.')
+}
+
+export async function uploadProductImage(file: File): Promise<string> {
+  if (!supabase) throw new Error('Supabase no está configurado; no se puede subir la imagen.')
+  const compressedImage = await compressProductImage(file)
+
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
-  const path = `${crypto.randomUUID()}-${safeName}`
-  const { error } = await supabase.storage.from('product-images').upload(path, file, {
+  const extension = compressedImage.type === 'image/webp' ? 'webp' : compressedImage.type === 'image/png' ? 'png' : 'jpg'
+  const path = `${crypto.randomUUID()}-${safeName.replace(/\.[^.]+$/, '')}.${extension}`
+  const { error } = await supabase.storage.from('product-images').upload(path, compressedImage, {
     cacheControl: '3600',
-    contentType: file.type,
+    contentType: compressedImage.type,
     upsert: false,
   })
   if (error) {

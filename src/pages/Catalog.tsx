@@ -6,6 +6,7 @@ import { CATEGORIES, JEWELRY_CATEGORIES } from '../data/products'
 import { buildCartItem } from '../lib/cart'
 import { formatMoney, whatsappUrl } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
+import { getActiveOffers, offerToProduct } from '../services/offerService'
 import { getProducts } from '../services/productService'
 import type { Product } from '../types'
 
@@ -34,7 +35,7 @@ const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, 
 function CatalogCard({ product, wished, onWish }: { product: Product; wished: boolean; onWish: () => void }) {
   const { addItem, showToast } = useCart()
   const [added, setAdded] = useState(false)
-  const catLabel = CATEGORIES.find((c) => c.key === product.category)?.label ?? product.category
+  const catLabel = product.category === 'ofertas' ? 'Oferta' : CATEGORIES.find((c) => c.key === product.category)?.label ?? product.category
 
   const add = () => {
     addItem(buildCartItem(product))
@@ -43,17 +44,26 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
     setTimeout(() => setAdded(false), 1600)
   }
 
-  return (
-    <article className="flex flex-col bg-surface-container-low rounded-xl overflow-hidden group hover:bg-surface-container transition-all duration-300">
+  const cardBody = (
+    <>
       <div className="relative w-full aspect-square bg-surface-container-lowest overflow-hidden">
-        <Link to={`/producto/${product.id}`}>
+        {product.category === 'ofertas' ? (
           <img
             alt={product.title}
             loading="lazy"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             src={product.image}
           />
-        </Link>
+        ) : (
+          <Link to={`/producto/${product.id}`}>
+            <img
+              alt={product.title}
+              loading="lazy"
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              src={product.image}
+            />
+          </Link>
+        )}
         {product.badge && (
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
             <span className="px-2 py-0.5 rounded-full bg-secondary-container/90 text-on-secondary-container font-label-caps text-[9px] uppercase font-bold tracking-wider">
@@ -71,17 +81,32 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
         </button>
       </div>
       <div className="p-3 flex flex-col flex-1 justify-between gap-2.5">
-        <Link to={`/producto/${product.id}`} className="flex flex-col gap-1">
-          <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
-          <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
-            {product.name}
-          </h2>
-          <p className="line-clamp-2 font-technical-data text-[11px] text-on-surface-variant">{product.description}</p>
-          {product.weight && <span className="font-technical-data text-[11px] text-secondary">Peso: {product.weight}</span>}
-        </Link>
+        {product.category === 'ofertas' ? (
+          <div className="flex flex-col gap-1">
+            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
+              {product.name}
+            </h2>
+            <p className="line-clamp-2 font-technical-data text-[11px] text-on-surface-variant">{product.description}</p>
+            {product.weight && <span className="font-technical-data text-[11px] text-secondary">Peso: {product.weight} g</span>}
+          </div>
+        ) : (
+          <Link to={`/producto/${product.id}`} className="flex flex-col gap-1">
+            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
+            <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
+              {product.name}
+            </h2>
+            <p className="line-clamp-2 font-technical-data text-[11px] text-on-surface-variant">{product.description}</p>
+            {product.weight && <span className="font-technical-data text-[11px] text-secondary">Peso: {product.weight} g</span>}
+          </Link>
+        )}
         <div className="flex flex-col gap-2 pt-1">
-          <div className="flex items-baseline justify-between">
-            <span className="font-title-editorial text-title-editorial text-primary">{formatMoney(product.price)}</span>
+          <div className="flex items-baseline justify-between gap-2">
+            <div>
+              {product.oldPrice && <span className="block font-label-caps text-[9px] uppercase tracking-wider text-secondary">Oferta</span>}
+              <span className="font-title-editorial text-title-editorial text-primary">{formatMoney(product.price)}</span>
+              {product.oldPrice && <span className="ml-1.5 font-technical-data text-[10px] text-on-surface-variant line-through">{formatMoney(product.oldPrice)}</span>}
+            </div>
             <span className="font-technical-data text-[10px] text-outline">USD</span>
           </div>
           <button
@@ -97,13 +122,22 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
           </button>
         </div>
       </div>
+    </>
+  )
+
+  return (
+    <article className="flex flex-col bg-surface-container-low rounded-xl overflow-hidden group hover:bg-surface-container transition-all duration-300">
+      {cardBody}
     </article>
   )
 }
 
 export default function Catalog() {
   const [params, setParams] = useSearchParams()
-  const { data: products, loading, error } = useAsync(getProducts, [])
+  const { data: products, loading, error } = useAsync(async () => {
+    const [catalogProducts, activeOffers] = await Promise.all([getProducts(), getActiveOffers()])
+    return [...catalogProducts, ...activeOffers.map(offerToProduct)]
+  }, [])
   const searchRef = useRef<HTMLInputElement>(null)
 
   const cat = params.get('cat') ?? 'all'
@@ -150,6 +184,7 @@ export default function Catalog() {
   const filtered = useMemo(() => {
     const q = normalize(query.trim())
     const list = scoped.filter((p) => {
+      if (p.category === 'ofertas') return true
       const selectedFilter = CATALOG_FILTERS.find((filter) => filter.key === cat)
       if (selectedFilter && selectedFilter.key !== 'all' && !selectedFilter.categories.includes(p.category)) return false
       const catLabel = CATEGORIES.find((c) => c.key === p.category)?.label ?? ''

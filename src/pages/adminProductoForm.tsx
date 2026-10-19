@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createProduct, getProduct, getProducts, updateProduct, uploadProductImage } from '../services/productService'
+import { createProduct, getAdminCategories, getProduct, getProducts, updateProduct, uploadProductImage } from '../services/productService'
 import { formatMoney } from '../lib/config'
 import type { CategoryKey, Product } from '../types'
 
-const CATEGORY_OPTIONS: { key: CategoryKey; label: string }[] = [
+const DEFAULT_CATEGORY_OPTIONS: { key: CategoryKey; label: string }[] = [
   { key: 'cadenas', label: 'Cadenas' },
   { key: 'anillos', label: 'Anillos y alianzas' },
   { key: 'collares', label: 'Collares' },
@@ -35,6 +35,27 @@ export default function AdminProductoForm() {
   const [error, setError] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [categoryOptions, setCategoryOptions] = useState(DEFAULT_CATEGORY_OPTIONS)
+  const [offerPrice, setOfferPrice] = useState<number | ''>('')
+
+  useEffect(() => {
+    void getAdminCategories()
+      .then((categories) => {
+        const categoriesFromDb = categories
+          .filter((category) => category.active)
+          .map((category) => ({ key: category.id as CategoryKey, label: category.name }))
+        if (categoriesFromDb.length > 0) {
+          setCategoryOptions(categoriesFromDb)
+          setForm((current) => ({
+            ...current,
+            category: current.category && categoriesFromDb.some((option) => option.key === current.category)
+              ? current.category
+              : categoriesFromDb[0].key,
+          }))
+        }
+      })
+      .catch(() => undefined)
+  }, [])
 
   useEffect(() => {
     if (!imageFile) {
@@ -50,6 +71,7 @@ export default function AdminProductoForm() {
     document.title = isNew ? 'Nuevo producto — Administrador' : 'Editar producto — Administrador'
     if (isNew) {
       setForm(emptyProduct)
+      setOfferPrice('')
       setLoading(false)
       return
     }
@@ -61,7 +83,8 @@ export default function AdminProductoForm() {
           setError('No se encontró este producto.')
           return
         }
-        setForm(product)
+        setForm({ ...product, price: product.oldPrice ?? product.price })
+        setOfferPrice(product.oldPrice ? product.price : '')
       })
       .catch((loadError: unknown) => setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar el producto.'))
       .finally(() => setLoading(false))
@@ -77,7 +100,8 @@ export default function AdminProductoForm() {
 
     const name = form.name?.trim() ?? ''
     const details = form.description?.trim() ?? ''
-    const price = Number(form.price)
+    const regularPrice = Number(form.price)
+    const discountedPrice = offerPrice === '' ? undefined : Number(offerPrice)
     const category = form.category
     const image = form.image?.trim() ?? ''
 
@@ -85,8 +109,12 @@ export default function AdminProductoForm() {
       setError('Completa nombre, detalles, categoría e imagen.')
       return
     }
-    if (!Number.isFinite(price) || price < 0) {
+    if (!Number.isFinite(regularPrice) || regularPrice < 0) {
       setError('El precio debe ser un número igual o mayor que cero.')
+      return
+    }
+    if (discountedPrice !== undefined && (!Number.isFinite(discountedPrice) || discountedPrice < 0 || discountedPrice >= regularPrice)) {
+      setError('El precio de oferta debe ser igual o mayor que cero y menor que el precio regular.')
       return
     }
 
@@ -103,15 +131,16 @@ export default function AdminProductoForm() {
         name,
         title: name,
         category,
-        categoryLabel: CATEGORY_OPTIONS.find((option) => option.key === category)?.label ?? category,
+        categoryLabel: categoryOptions.find((option) => option.key === category)?.label ?? category,
         tagline: details,
         description: details,
-        price,
+        price: discountedPrice ?? regularPrice,
+        oldPrice: discountedPrice === undefined ? undefined : regularPrice,
         image: savedImage,
-        detailLabel: form.weight?.trim() ? `Peso: ${form.weight.trim()}` : '',
+        detailLabel: form.weight?.trim() ? `Peso: ${form.weight.trim()} g` : '',
         weight: JEWELRY_CATEGORIES.includes(category) ? (form.weight?.trim() || undefined) : undefined,
         createdAt: existing?.createdAt ?? new Date().toISOString().slice(0, 10),
-        specs: form.weight?.trim() && JEWELRY_CATEGORIES.includes(category) ? [['Peso', form.weight.trim()]] : [],
+        specs: form.weight?.trim() && JEWELRY_CATEGORIES.includes(category) ? [['Peso', `${form.weight.trim()} g`]] : [],
         featured: existing?.featured ?? false,
         exclusivity: existing?.exclusivity ?? 0,
         availability: existing?.availability ?? 'boveda',
@@ -180,7 +209,7 @@ export default function AdminProductoForm() {
         <section className="space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
           <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Categoría</span>
           <div className="grid grid-cols-2 gap-2">
-            {CATEGORY_OPTIONS.map((option) => {
+            {categoryOptions.map((option) => {
               const active = form.category === option.key
               return <button key={option.key} type="button" aria-pressed={active} onClick={() => updateField('category', option.key)} className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-2 text-sm transition-colors ${active ? 'bg-primary font-medium text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant'}`}>
                 <span className="material-symbols-outlined text-[18px]">{option.key === 'perfumeria' ? 'spa' : option.key === 'relojes' ? 'watch' : 'diamond'}</span>
@@ -190,9 +219,9 @@ export default function AdminProductoForm() {
           </div>
         </section>
 
-        <div className={`grid gap-3 ${hasWeight ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <div className="grid grid-cols-2 gap-3">
           <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
-            <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Precio (USD)</span>
+            <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Precio regular (USD)</span>
             <input
               required
               type="number"
@@ -205,13 +234,27 @@ export default function AdminProductoForm() {
               placeholder="0.00"
             />
           </label>
-          {hasWeight && (
-            <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
-              <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Peso de la joya</span>
-              <input value={form.weight ?? ''} onChange={(event) => updateField('weight', event.target.value)} className="min-h-12 w-full rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface outline-none focus:bg-surface-container-high" placeholder="Ej. 5 g" />
-            </label>
-          )}
+          <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
+            <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Oferta (USD)</span>
+            <input
+              type="number"
+              min="0"
+              max={form.price ?? undefined}
+              step="0.01"
+              inputMode="decimal"
+              value={offerPrice}
+              onChange={(event) => setOfferPrice(event.target.value === '' ? '' : Number(event.target.value))}
+              className="min-h-12 w-full rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface outline-none focus:bg-surface-container-high"
+              placeholder="Opcional"
+            />
+          </label>
         </div>
+        {hasWeight && (
+          <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
+            <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Peso de la joya (g)</span>
+            <input value={form.weight ?? ''} onChange={(event) => updateField('weight', event.target.value)} className="min-h-12 w-full rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface outline-none focus:bg-surface-container-high" placeholder="Ej. 5 g" />
+          </label>
+        )}
 
         <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
           <span className="font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant">Detalles o descripción</span>
@@ -246,8 +289,9 @@ export default function AdminProductoForm() {
             <img src={imagePreview || form.image} alt="" className="h-20 w-20 rounded-lg object-cover" />
             <div className="min-w-0">
               <p className="font-medium">{form.name || 'Vista previa'}</p>
-              <p className="text-sm text-primary">{formatMoney(Number(form.price) || 0)} USD</p>
-              {form.weight && <p className="text-xs text-on-surface-variant">Peso: {form.weight}</p>}
+              <p className="text-sm text-primary">{formatMoney(offerPrice === '' ? Number(form.price) || 0 : offerPrice)} USD</p>
+              {offerPrice !== '' && <p className="text-xs text-on-surface-variant line-through">{formatMoney(Number(form.price) || 0)} USD</p>}
+              {form.weight && <p className="text-xs text-on-surface-variant">Peso: {form.weight} g</p>}
             </div>
           </div>
         )}

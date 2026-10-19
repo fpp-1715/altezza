@@ -4,7 +4,8 @@ import { IMG } from '../data/images'
 import { MASTER_CATEGORIES } from '../data/products'
 import { formatMoney, whatsappUrl } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
-import { getFeaturedProducts } from '../services/productService'
+import { getActiveOffers, offerToProduct } from '../services/offerService'
+import { getProducts } from '../services/productService'
 
 const PILLARS = [
   { icon: 'verified', title: 'Garantía de oro de por vida', text: 'Cada pieza de oro cuenta con garantía de por vida.' },
@@ -13,7 +14,12 @@ const PILLARS = [
 ]
 
 export default function Home() {
-  const { data: featured, loading: featuredLoading, error: featuredError } = useAsync(getFeaturedProducts, [])
+  const { data: products, loading: featuredLoading, error: featuredError } = useAsync(async () => {
+    const [catalogProducts, activeOffers] = await Promise.all([getProducts(), getActiveOffers()])
+    const offerProducts = catalogProducts.filter((product) => product.oldPrice && product.oldPrice > product.price)
+    return [...offerProducts, ...activeOffers.map(offerToProduct)]
+  }, [])
+  const cards = products ?? []
 
   return (
     <div className="flex flex-col w-full">
@@ -120,38 +126,50 @@ export default function Home() {
             <p role="alert" className="py-4 font-body-sm text-body-sm text-on-surface-variant">
               No pudimos cargar los productos destacados desde Supabase: {featuredError.message}
             </p>
-          ) : featured
-            ? featured.map((product) => (
-                <Link
-                  key={product.id}
-                  to={`/producto/${product.id}`}
-                  className="group w-36 shrink-0 snap-start"
-                >
-                  <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)]">
-                    <img
-                      src={product.image}
-                      alt={product.name}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/30 to-transparent" />
-                    <div className="absolute inset-x-3 bottom-3 text-center">
-                      <span className="mb-0.5 block truncate font-label-caps text-[10px] uppercase tracking-[0.18em] text-primary">
-                        {product.categoryLabel}
-                      </span>
-                      <span className="block line-clamp-2 font-title-editorial text-sm leading-tight text-on-surface">
-                        {product.name}
-                      </span>
-                      <span className="mt-0.5 block font-technical-data text-[10px] text-on-surface-variant">
-                        {formatMoney(product.price)} USD
-                      </span>
+          ) : cards.length > 0
+            ? cards.map((product) => {
+                const card = (
+                  <div className="group w-36 shrink-0 snap-start">
+                    <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)]">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/30 to-transparent" />
+                      <div className="absolute inset-x-3 bottom-3 text-center">
+                        <span className="mb-0.5 block truncate font-label-caps text-[10px] uppercase tracking-[0.18em] text-primary">
+                          {product.categoryLabel}
+                        </span>
+                        <span className="block line-clamp-2 font-title-editorial text-sm leading-tight text-on-surface">
+                          {product.name}
+                        </span>
+                        <span className="mt-0.5 block font-label-caps text-[9px] uppercase tracking-wider text-secondary">Oferta</span>
+                        <span className="mt-0.5 block font-technical-data text-[10px] text-on-surface-variant">
+                          {formatMoney(product.price)} USD
+                        </span>
+                        <span className="block font-technical-data text-[9px] text-on-surface-variant line-through">{formatMoney(product.oldPrice ?? product.price)} USD</span>
+                      </div>
                     </div>
                   </div>
-                </Link>
-              ))
+                )
+
+                return product.category === 'ofertas' ? (
+                  <div key={product.id} className="shrink-0 snap-start">{card}</div>
+                ) : (
+                  <Link key={product.id} to={`/producto/${product.id}`} className="shrink-0 snap-start">
+                    {card}
+                  </Link>
+                )
+              })
             : featuredLoading ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-48 w-36 shrink-0 rounded-xl bg-surface-container animate-pulse" />
-              )) : null}
+              )) : (
+                <div className="py-4 font-body-sm text-body-sm text-on-surface-variant">
+                  No hay productos en oferta en este momento.
+                </div>
+              )}
         </div>
       </section>
 

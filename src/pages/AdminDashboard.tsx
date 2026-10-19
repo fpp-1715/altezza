@@ -242,7 +242,9 @@ export default function AdminDashboard() {
                       </span>
                     </td>
                     <td className="py-3 px-3 text-right font-semibold text-primary">
+                      {p.oldPrice && <span className="mr-1.5 font-label-caps text-[9px] uppercase text-secondary">Oferta</span>}
                       {formatMoney(p.price)}
+                      {p.oldPrice && <span className="ml-1.5 font-technical-data text-[10px] font-normal text-on-surface-variant line-through">{formatMoney(p.oldPrice)}</span>}
                     </td>
                     <td className="py-3 px-3 text-center">
                       <span

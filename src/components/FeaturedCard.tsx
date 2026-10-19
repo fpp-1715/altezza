@@ -48,11 +48,15 @@ export function FeaturedCard({ product }: { product: Product }) {
           <p className="font-technical-data text-[11px] text-on-surface-variant/80 mb-2 line-clamp-2">{product.description}</p>
         </div>
         <div className="pt-2 flex items-baseline justify-between bg-surface-container-low/50 -mx-3.5 -mb-3.5 px-3.5 py-2.5">
-          <span className="font-headline-sm text-[16px] text-primary font-semibold">
-            {formatMoney(product.price)}{' '}
-            <span className="font-technical-data text-[10px] font-normal text-on-surface-variant">USD</span>
-          </span>
-          {product.weight && <span className="font-technical-data text-[10px] text-secondary">Peso: {product.weight}</span>}
+          <div>
+            {product.oldPrice && <span className="block font-label-caps text-[9px] uppercase tracking-wider text-secondary">Oferta</span>}
+            <span className="font-headline-sm text-[16px] text-primary font-semibold">
+              {formatMoney(product.price)}{' '}
+              <span className="font-technical-data text-[10px] font-normal text-on-surface-variant">USD</span>
+            </span>
+            {product.oldPrice && <span className="ml-1.5 font-technical-data text-[10px] text-on-surface-variant line-through">{formatMoney(product.oldPrice)}</span>}
+          </div>
+          {product.weight && <span className="font-technical-data text-[10px] text-secondary">Peso: {product.weight} g</span>}
         </div>
       </Link>
     </article>
