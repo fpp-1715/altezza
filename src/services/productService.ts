@@ -18,7 +18,6 @@ export async function getProducts(): Promise<Product[]> {
   if (error) throw presentDatabaseError(error)
   return (data ?? [])
     .filter((row) => row.active === undefined || Boolean(row.active))
-    .filter((row) => row.stock_count == null || Number(row.stock_count) > 0)
     .map(fromDatabase)
 }
 
@@ -36,7 +35,6 @@ export async function getProduct(id: string): Promise<Product | null> {
   if (!data) return null
   const product = fromDatabase(data)
   if (product.active === false) return null
-  if (product.stockCount != null && product.stockCount <= 0) return null
   return product
 }
 

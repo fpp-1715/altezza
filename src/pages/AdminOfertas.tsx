@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatMoney } from '../lib/config'
-import { getProducts, uploadProductImage } from '../services/productService'
+import { getCategories, getProducts, uploadProductImage } from '../services/productService'
 import { createOffer, deleteOffer, getOfferProductNames, getOffers, setOfferStatus, updateOffer } from '../services/offerService'
 import type { OfferRecord } from '../services/offerService'
+import type { CategoryInfo } from '../types'
 import type { Product } from '../types'
 
 type OfferForm = {
@@ -30,6 +31,7 @@ const emptyOffer: OfferForm = {
 export default function AdminOfertas() {
   const [offers, setOffers] = useState<OfferRecord[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<CategoryInfo[]>([])
   const [form, setForm] = useState(emptyOffer)
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -44,8 +46,8 @@ export default function AdminOfertas() {
   const [error, setError] = useState('')
 
   const selectorOptions = useMemo(
-    () => ['all', ...new Set(products.map((product) => product.category))],
-    [products],
+    () => [{ key: 'all', label: 'Todas' }, ...categories.filter((category) => category.key !== 'all')],
+    [categories],
   )
 
   const filteredSelectorProducts = useMemo(() => {
@@ -56,6 +58,15 @@ export default function AdminOfertas() {
       return matchesCategory && matchesQuery
     })
   }, [products, selectorCategory, selectorQuery])
+
+  const originalPriceTotal = useMemo(
+    () => selectedProducts.reduce((total, productId) => {
+      const product = products.find((item) => item.id === productId)
+      if (!product) return total
+      return total + (product.oldPrice != null && product.oldPrice > product.price ? product.oldPrice : product.price)
+    }, 0),
+    [products, selectedProducts],
+  )
 
   const resetForm = () => {
     setForm(emptyOffer)
@@ -97,9 +108,10 @@ export default function AdminOfertas() {
   const reload = async () => {
     setLoading(true)
     try {
-      const [offerRows, productRows] = await Promise.all([getOffers(), getProducts()])
+      const [offerRows, productRows, categoryRows] = await Promise.all([getOffers(), getProducts(), getCategories()])
       setOffers(offerRows)
       setProducts(productRows)
+      setCategories(categoryRows)
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'No se pudieron cargar las ofertas.')
     } finally {
@@ -163,7 +175,7 @@ export default function AdminOfertas() {
       }
 
       const imageUrl = imageFile ? await uploadProductImage(imageFile) : form.image_url ?? null
-      const payload = { ...form, image_url: imageUrl }
+      const payload = { ...form, original_price: originalPriceTotal, image_url: imageUrl }
 
       if (editingId) {
         await updateOffer(editingId, payload, selectedProducts)
@@ -198,12 +210,43 @@ export default function AdminOfertas() {
       {creating && (
         <form onSubmit={submit} className="space-y-3 rounded-xl bg-surface-container p-4">
           <h2 className="font-title-editorial text-lg text-on-surface">{editingId ? 'Editar combo' : 'Nuevo combo'}</h2>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setSelectorOpen(true)}
+              className="flex min-h-16 w-full items-center justify-between gap-3 rounded-xl border border-primary/40 bg-primary/10 px-4 text-left text-primary transition-colors hover:bg-primary/15"
+            >
+              <span className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-[26px]">add_shopping_cart</span>
+                <span>
+                  <span className="block font-semibold">Seleccionar productos</span>
+                  <span className="mt-0.5 block text-xs text-on-surface-variant">Añade todos los productos que incluirá el combo</span>
+                </span>
+              </span>
+              <span className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary">
+                {selectedProducts.length}
+              </span>
+            </button>
+            {selectedProducts.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {selectedProducts.map((selectedId) => {
+                  const product = products.find((item) => item.id === selectedId)
+                  if (!product) return null
+                  return (
+                    <button key={selectedId} type="button" onClick={() => toggleSelectedProduct(selectedId)} className="rounded-full border border-primary/30 bg-primary/8 px-2.5 py-1 text-xs text-on-surface">
+                      {product.name} ×
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
           <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Nombre del combo" className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline" />
           <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Subtítulo (opcional)" className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-on-surface placeholder:text-outline" />
           <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalles de la oferta" rows={3} className="w-full rounded-lg bg-surface-container-lowest px-3 py-2 text-on-surface placeholder:text-outline" />
           <div className="grid grid-cols-2 gap-3">
             <label className="space-y-1 text-xs text-on-surface-variant">Precio original
-              <input required type="number" min="0" step="0.01" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: Number(e.target.value) })} className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface" />
+              <input readOnly type="number" value={originalPriceTotal} className="min-h-11 w-full cursor-not-allowed rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface" />
             </label>
             <label className="space-y-1 text-xs text-on-surface-variant">Precio del combo
               <input required type="number" min="0" step="0.01" value={form.offer_price} onChange={(e) => setForm({ ...form, offer_price: Number(e.target.value) })} className="min-h-11 w-full rounded-lg bg-surface-container-lowest px-3 text-base text-on-surface" />
@@ -214,28 +257,6 @@ export default function AdminOfertas() {
             <input type="file" accept="image/*" onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} className="block min-h-11 w-full rounded-lg bg-surface-container-lowest text-sm text-on-surface file:mr-3 file:min-h-11 file:border-0 file:bg-primary file:px-3 file:font-medium file:text-on-primary" />
           </label>
           {imagePreview && <img src={imagePreview} alt="Vista previa de la foto del combo" className="aspect-[16/9] w-full rounded-lg object-cover" />}
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-label-caps text-[10px] uppercase tracking-wider text-on-surface-variant">Productos del combo</span>
-              <button type="button" onClick={() => setSelectorOpen(true)} className="rounded-lg bg-surface-container-high px-3 py-2 text-xs font-medium text-primary">
-                {selectedProducts.length ? `${selectedProducts.length} seleccionados` : 'Seleccionar productos'}
-              </button>
-            </div>
-            {selectedProducts.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {selectedProducts.map((selectedId) => {
-                  const product = products.find((item) => item.id === selectedId)
-                  if (!product) return null
-                  return (
-                    <button key={selectedId} type="button" onClick={() => toggleSelectedProduct(selectedId)} className="rounded-full border border-primary/30 bg-primary/8 px-2 py-1 text-[10px] text-on-surface">
-                      {product.name}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-          </div>
 
           {selectorOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -255,12 +276,12 @@ export default function AdminOfertas() {
                   <div className="flex flex-wrap gap-2">
                     {selectorOptions.map((option) => (
                       <button
-                        key={option}
+                        key={option.key}
                         type="button"
-                        onClick={() => setSelectorCategory(option)}
-                        className={`rounded-full px-3 py-1.5 text-[11px] uppercase tracking-wide ${selectorCategory === option ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}
+                        onClick={() => setSelectorCategory(option.key)}
+                        className={`rounded-full px-3 py-1.5 text-[11px] uppercase tracking-wide ${selectorCategory === option.key ? 'bg-primary text-on-primary' : 'bg-surface-container-high text-on-surface-variant'}`}
                       >
-                        {option === 'all' ? 'Todas' : option}
+                        {option.label}
                       </button>
                     ))}
                   </div>

@@ -7,7 +7,8 @@ import { buildCartItem } from '../lib/cart'
 import { formatMoney, whatsappUrl } from '../lib/config'
 import { useAsync } from '../lib/useAsync'
 import { getActiveOffers, offerToProduct } from '../services/offerService'
-import { getProducts } from '../services/productService'
+import { getCategories, getProducts } from '../services/productService'
+import type { CategoryInfo } from '../types'
 import type { Product } from '../types'
 
 const PAGE_SIZE = 6
@@ -31,13 +32,23 @@ const chipOn = 'bg-primary text-on-primary font-semibold'
 const chipOff = 'bg-surface-container-low text-on-surface-variant hover:text-on-surface'
 
 const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+const isCategoryId = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 
-function CatalogCard({ product, wished, onWish }: { product: Product; wished: boolean; onWish: () => void }) {
+function getCategoryLabel(product: Product, categories: CategoryInfo[] | null) {
+  if (product.category === 'ofertas') return 'Oferta'
+  const label = categories?.find((category) => category.key === product.category)?.label
+    ?? CATEGORIES.find((category) => category.key === product.category)?.label
+  if (label) return label
+  return isCategoryId(product.categoryLabel) ? 'Categoría' : product.categoryLabel || product.category
+}
+
+function CatalogCard({ product, categoryLabel, wished, onWish }: { product: Product; categoryLabel: string; wished: boolean; onWish: () => void }) {
   const { addItem, showToast } = useCart()
   const [added, setAdded] = useState(false)
-  const catLabel = product.category === 'ofertas' ? 'Oferta' : CATEGORIES.find((c) => c.key === product.category)?.label ?? product.category
+  const soldOut = product.stockCount === 0
 
   const add = () => {
+    if (soldOut) return
     addItem(buildCartItem(product))
     showToast(`${product.title} agregada a su bolsa`)
     setAdded(true)
@@ -64,6 +75,13 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
             />
           </Link>
         )}
+        {soldOut && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/45">
+            <span className="rounded-full border border-white/40 bg-black/70 px-3 py-1.5 font-label-caps text-[10px] font-semibold uppercase tracking-wider text-white">
+              Agotado
+            </span>
+          </div>
+        )}
         {product.badge && (
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10 pointer-events-none">
             <span className="px-2 py-0.5 rounded-full bg-secondary-container/90 text-on-secondary-container font-label-caps text-[9px] uppercase font-bold tracking-wider">
@@ -83,7 +101,7 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
       <div className="p-3 flex flex-col flex-1 justify-between gap-2.5">
         {product.category === 'ofertas' ? (
           <div className="flex flex-col gap-1">
-            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
+            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{categoryLabel}</span>
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
               {product.name}
             </h2>
@@ -92,7 +110,7 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
           </div>
         ) : (
           <Link to={`/producto/${product.id}`} className="flex flex-col gap-1">
-            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{catLabel}</span>
+            <span className="font-label-caps text-[10px] uppercase text-outline tracking-wider truncate">{categoryLabel}</span>
             <h2 className="font-headline-sm text-headline-sm text-on-surface font-light leading-snug line-clamp-1">
               {product.name}
             </h2>
@@ -110,15 +128,18 @@ function CatalogCard({ product, wished, onWish }: { product: Product; wished: bo
             <span className="font-technical-data text-[10px] text-outline">USD</span>
           </div>
           <button
+            disabled={soldOut}
             onClick={add}
-            className={`w-full h-9 rounded-lg flex items-center justify-center gap-1.5 font-label-md text-label-md transition-all active:scale-95 ${
-              added
+            className={`w-full h-9 rounded-lg flex items-center justify-center gap-1.5 font-label-md text-label-md transition-all ${
+              soldOut
+                ? 'cursor-not-allowed bg-surface-container-high text-outline'
+                : added
                 ? 'bg-primary text-on-primary'
-                : 'bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface'
+                : 'bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface active:scale-95'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">{added ? 'check' : 'shopping_bag'}</span>
-            <span>{added ? 'Añadida' : 'Añadir'}</span>
+            <span className="material-symbols-outlined text-[18px]">{soldOut ? 'block' : added ? 'check' : 'shopping_bag'}</span>
+            <span>{soldOut ? 'Agotado' : added ? 'Añadida' : 'Añadir'}</span>
           </button>
         </div>
       </div>
@@ -138,6 +159,7 @@ export default function Catalog() {
     const [catalogProducts, activeOffers] = await Promise.all([getProducts(), getActiveOffers()])
     return [...catalogProducts, ...activeOffers.map(offerToProduct)]
   }, [])
+  const { data: categories } = useAsync(getCategories, [])
   const searchRef = useRef<HTMLInputElement>(null)
 
   const cat = params.get('cat') ?? 'all'
@@ -187,7 +209,7 @@ export default function Catalog() {
       if (p.category === 'ofertas') return true
       const selectedFilter = CATALOG_FILTERS.find((filter) => filter.key === cat)
       if (selectedFilter && selectedFilter.key !== 'all' && !selectedFilter.categories.includes(p.category)) return false
-      const catLabel = CATEGORIES.find((c) => c.key === p.category)?.label ?? ''
+      const catLabel = getCategoryLabel(p, categories)
       if (q && !normalize(`${p.name} ${p.title} ${p.categoryLabel} ${catLabel} ${p.material ?? ''} ${p.tagline}`).includes(q)) return false
       if (p.price > maxPrice && maxPrice < MAX_PRICE) return false
       return true
@@ -203,7 +225,7 @@ export default function Catalog() {
       const categoryDifference = categoryOrder.indexOf(a.category) - categoryOrder.indexOf(b.category)
       return categoryDifference || sorters[sort](a, b)
     })
-  }, [scoped, cat, query, maxPrice, sort])
+  }, [scoped, categories, cat, query, maxPrice, sort])
 
   const activeFilters =
     (cat !== 'all' ? 1 : 0) + (maxPrice < MAX_PRICE ? 1 : 0)
@@ -420,6 +442,7 @@ export default function Catalog() {
               <CatalogCard
                 key={p.id}
                 product={p}
+                categoryLabel={getCategoryLabel(p, categories)}
                 wished={wishes.includes(p.id)}
                 onWish={() =>
                   setWishes((w) => (w.includes(p.id) ? w.filter((id) => id !== p.id) : [...w, p.id]))

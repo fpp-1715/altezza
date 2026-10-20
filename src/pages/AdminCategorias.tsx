@@ -15,6 +15,7 @@ export default function AdminCategorias() {
   const [newKind, setNewKind] = useState<CategoryKind>('oro')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [savingId, setSavingId] = useState('')
   const [draftNames, setDraftNames] = useState<Record<string, string>>({})
   const [draftKinds, setDraftKinds] = useState<Record<string, CategoryKind>>({})
@@ -35,9 +36,11 @@ export default function AdminCategorias() {
   const save = async (category: AdminCategory, changes: { name?: string; active?: boolean; kind?: CategoryKind }) => {
     setSavingId(category.id)
     setError('')
+    setNotice('')
     try {
       await updateCategory(category.id, changes)
       await reload()
+      setNotice(`Categoría "${changes.name ?? category.name}" guardada correctamente.`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo actualizar la categoría.')
     } finally {
@@ -50,6 +53,7 @@ export default function AdminCategorias() {
     const trimmedName = newName.trim()
     if (!trimmedName) return
     setError('')
+    setNotice('')
     try {
       await createCategory({
         name: trimmedName,
@@ -60,6 +64,7 @@ export default function AdminCategorias() {
       setNewName('')
       setNewKind('oro')
       await reload()
+      setNotice(`Categoría "${trimmedName}" guardada correctamente.`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo crear la categoría.')
     }
@@ -69,9 +74,11 @@ export default function AdminCategorias() {
     const confirmed = window.confirm(`¿Seguro que quieres eliminar la categoría "${category.name}"?\n\nSi tiene productos asociados, no se podrá borrar.`)
     if (!confirmed) return
     setError('')
+    setNotice('')
     try {
       await deleteCategory(category.id)
       await reload()
+      setNotice(`Categoría "${category.name}" eliminada.`)
     } catch (e) {
       const message = e instanceof Error ? e.message : 'No se pudo eliminar la categoría.'
       setError(message)
@@ -86,6 +93,7 @@ export default function AdminCategorias() {
       </header>
 
       {error && <p role="alert" className="rounded-xl border border-error/40 bg-error-container/20 p-3 text-sm text-error">{error}</p>}
+      {notice && <p role="status" className="rounded-xl border border-tertiary/30 bg-tertiary/10 p-3 text-sm text-tertiary">{notice}</p>}
 
       <form onSubmit={add} className="space-y-3 rounded-xl bg-surface-container p-4 md:max-w-2xl">
         <h2 className="font-title-editorial text-base text-on-surface">Añadir categoría</h2>

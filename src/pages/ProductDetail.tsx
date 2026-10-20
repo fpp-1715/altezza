@@ -105,6 +105,7 @@ function ProductView({ product }: { product: Product }) {
   const currentSel: Selection = { ...sel, engraving: engraveOn ? engraving : undefined }
   const price = unitPrice(product, currentSel)
   const selectedMetalLabel = sel.metal ? metalDisplay(sel.metal) : product.material
+  const soldOut = product.stockCount === 0
 
   const share = async () => {
     const url = window.location.href
@@ -121,6 +122,7 @@ function ProductView({ product }: { product: Product }) {
   }
 
   const add = () => {
+    if (soldOut) return
     addItem(buildCartItem(product, currentSel))
     showToast(`${product.name} añadida a su bolsa`)
   }
@@ -369,10 +371,13 @@ function ProductView({ product }: { product: Product }) {
       <section className="px-4 mt-8 flex flex-col gap-3">
         <button
           onClick={add}
-          className="w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md tracking-wider uppercase font-semibold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(230,194,118,0.2)] active:scale-[0.98] transition-all"
+          disabled={soldOut}
+          className={`w-full h-12 rounded-lg font-label-md text-label-md tracking-wider uppercase font-semibold flex items-center justify-center gap-2 transition-all ${
+            soldOut ? 'cursor-not-allowed bg-surface-container-high text-outline' : 'bg-primary text-on-primary shadow-[0_8px_20px_rgba(230,194,118,0.2)] active:scale-[0.98]'
+          }`}
         >
-          <span className="material-symbols-outlined text-[20px]">local_mall</span>
-          Añadir a la Bolsa — {formatMoney(price)} USD
+          <span className="material-symbols-outlined text-[20px]">{soldOut ? 'block' : 'local_mall'}</span>
+          {soldOut ? 'Agotado' : `Añadir a la Bolsa — ${formatMoney(price)} USD`}
         </button>
         <a
           href={consult}
