@@ -76,7 +76,7 @@ export default function AdminProductos() {
   }
 
   return (
-    <div className="space-y-4 px-4 py-4">
+    <div className="mx-auto max-w-screen-2xl space-y-4 px-4 py-4 md:px-0 md:py-8">
       <div className="flex items-end justify-between gap-2">
         <div>
           <span className="mb-1 block font-label-caps text-[10px] uppercase tracking-widest text-primary">Inventario</span>
@@ -114,7 +114,7 @@ export default function AdminProductos() {
       {notice && <p role="status" className="rounded-xl bg-tertiary/10 p-3 text-sm text-tertiary">{notice}</p>}
       <p className="font-technical-data text-[11px] text-outline">Mostrando {filtered.length} de {products.length} productos</p>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 2xl:grid-cols-3">
         {loading ? (
           <div className="rounded-xl bg-surface-container p-8 text-center text-on-surface-variant">Cargando catálogo…</div>
         ) : filtered.map((product) => (

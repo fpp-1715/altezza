@@ -11,7 +11,7 @@ export default function Cart() {
 
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center text-center gap-3 px-6 py-24">
+      <div className="mx-auto flex flex-col items-center text-center gap-3 px-6 py-24 md:min-h-[60vh]">
         <span className="material-symbols-outlined text-[48px] text-outline">shopping_bag</span>
         <p className="font-headline-sm text-headline-sm text-on-surface">Bolsa sin piezas</p>
         <p className="font-body-sm text-body-sm text-on-surface-variant max-w-[260px]">
@@ -29,7 +29,7 @@ export default function Cart() {
   }
 
   return (
-    <div className="flex flex-col w-full px-4 pt-3 gap-6">
+    <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 px-4 pt-3 md:px-8 md:pt-8">
       <div>
         <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em] block mb-1">
           Selección Privada
@@ -42,7 +42,7 @@ export default function Cart() {
         </h1>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         {items.map((i) => (
           <article key={i.lineId} className="flex gap-3 p-3 rounded-xl bg-surface-container-low">
             <Link to={`/producto/${i.productId}`} className="w-24 h-24 rounded-lg overflow-hidden bg-surface-container-lowest shrink-0">

@@ -168,7 +168,7 @@ export default function AdminProductoForm() {
   }
 
   return (
-    <form onSubmit={handleSave} className="mx-auto max-w-3xl space-y-4 px-4 py-4 pb-28">
+    <form onSubmit={handleSave} className="mx-auto max-w-screen-xl space-y-4 px-4 py-4 pb-28 md:px-0 md:py-8">
       <header className="flex items-center gap-3">
         <Link
           to="/admin/productos"
@@ -193,7 +193,7 @@ export default function AdminProductoForm() {
         </button>
       </header>
 
-      <section className="space-y-4">
+      <section className="grid grid-cols-1 gap-4 space-y-0 lg:grid-cols-2">
         <label className="block space-y-2 rounded-xl bg-surface-container-low p-3.5 shadow-sm">
           <span className="flex justify-between font-label-caps text-[11px] uppercase tracking-wider text-on-surface-variant"><span>Nombre del producto</span><span className="text-primary">Obligatorio</span></span>
           <input

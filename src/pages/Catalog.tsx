@@ -385,9 +385,9 @@ export default function Catalog() {
         </div>
       </section>
 
-      <section className="px-4 py-1">
+      <section className="mx-auto w-full max-w-screen-2xl px-4 py-1 md:px-8">
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 md:gap-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="aspect-[3/4] rounded-xl bg-surface-container-low animate-pulse" />
             ))}
@@ -415,7 +415,7 @@ export default function Catalog() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 md:gap-5">
             {shown.map((p) => (
               <CatalogCard
                 key={p.id}

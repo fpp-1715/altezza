@@ -15,7 +15,7 @@ export function BottomNav() {
   const isCatalog = pathname === '/catalogo' && !isJoyas
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 mx-auto max-w-[480px] z-50 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_0_0_rgba(198,164,91,0.2)]">
+    <nav className="fixed bottom-0 inset-x-0 z-50 mx-auto bg-surface/90 pb-safe shadow-[0_-1px_0_0_rgba(198,164,91,0.2)] backdrop-blur-xl md:hidden">
       <div className="grid grid-cols-5 items-center h-16 px-1">
         <Link to="/" className={itemClass(pathname === '/')}>
           <span className="material-symbols-outlined text-[22px]">home</span>

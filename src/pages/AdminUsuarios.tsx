@@ -115,7 +115,7 @@ export default function AdminUsuarios() {
   }
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-5">
+    <div className="mx-auto grid max-w-screen-2xl grid-cols-1 gap-5 px-4 py-5 md:px-0 md:py-8 lg:grid-cols-2">
       <header>
         <h1 className="font-title-editorial text-2xl text-primary">Usuarios del panel</h1>
         <p className="mt-1 text-sm text-on-surface-variant">Cada cuenta inicia sesión con su propio correo y contraseña.</p>
@@ -124,7 +124,7 @@ export default function AdminUsuarios() {
       {error && <p role="alert" className="rounded-lg border border-error/30 bg-error-container/20 p-3 text-sm text-error">{error}</p>}
       {notice && <p role="status" className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-sm text-primary">{notice}</p>}
 
-      <form onSubmit={addUser} className="flex flex-col gap-3 rounded-xl bg-surface-container p-4">
+      <form onSubmit={addUser} className="flex flex-col gap-3 rounded-xl bg-surface-container p-4 lg:col-span-2 lg:max-w-2xl">
         <h2 className="font-label-md text-label-md text-on-surface">Agregar cuenta</h2>
         <label className="flex flex-col gap-1 text-xs text-on-surface-variant">
           Correo electrónico
@@ -139,7 +139,7 @@ export default function AdminUsuarios() {
         </button>
       </form>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 lg:col-span-2">
         <h2 className="font-label-md text-label-md text-on-surface">Cuentas existentes</h2>
         {loading ? <p className="text-sm text-on-surface-variant">Cargando cuentas…</p> : users.length === 0 ? (
           <p className="rounded-xl bg-surface-container p-4 text-sm text-on-surface-variant">No se encontraron cuentas.</p>

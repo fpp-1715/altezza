@@ -182,7 +182,7 @@ export default function AdminOfertas() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 py-4">
+    <div className="mx-auto max-w-screen-2xl space-y-4 px-4 py-4 md:px-0 md:py-8">
       <header className="flex items-end justify-between gap-3">
         <div>
           <span className="mb-1 block font-label-caps text-[10px] uppercase tracking-widest text-secondary">Campañas de temporada</span>
@@ -306,7 +306,9 @@ export default function AdminOfertas() {
 
       {loading ? <p className="rounded-xl bg-surface-container p-8 text-center text-on-surface-variant">Cargando ofertas…</p> : offers.length === 0 ? (
         <p className="rounded-xl bg-surface-container p-8 text-center text-on-surface-variant">No hay ofertas guardadas.</p>
-      ) : offers.map((offer) => (
+      ) : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        {offers.map((offer) => (
         <article key={offer.id} className="overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-low shadow-lg">
           {offer.image_url && <img src={offer.image_url} alt="" className="aspect-[16/9] w-full object-cover" />}
           <div className="space-y-3 p-4">
@@ -337,7 +339,9 @@ export default function AdminOfertas() {
             </div>
           </div>
         </article>
-      ))}
+        ))}
+        </div>
+      )}
     </div>
   )
 }

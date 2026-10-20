@@ -18,12 +18,12 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 inset-x-0 mx-auto max-w-[480px] z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_0_0_rgba(198,164,91,0.2)]">
-        <div className="h-16 px-4 flex items-center justify-between">
+      <header className="fixed top-0 inset-x-0 z-50 pt-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_0_0_rgba(198,164,91,0.2)]">
+        <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 md:h-20 md:px-8">
           <button
             aria-label="Menu Principal"
             onClick={() => setMenuOpen(true)}
-            className="w-11 h-11 flex items-center justify-center text-primary hover:text-on-surface transition-colors"
+            className="flex h-11 w-11 items-center justify-center text-primary transition-colors hover:text-on-surface md:hidden"
           >
             <span className="material-symbols-outlined text-[24px]">menu</span>
           </button>
@@ -42,7 +42,20 @@ export function Header() {
               ) : null}
             </div>
           </Link>
+          <nav aria-label="Navegación principal" className="hidden items-center gap-8 md:flex">
+            <Link to="/" className="font-label-caps text-[11px] uppercase tracking-[0.16em] text-on-surface-variant transition-colors hover:text-primary">Inicio</Link>
+            <Link to="/catalogo" className="font-label-caps text-[11px] uppercase tracking-[0.16em] text-on-surface-variant transition-colors hover:text-primary">Catálogo</Link>
+            <Link to="/catalogo?grupo=joyas" className="font-label-caps text-[11px] uppercase tracking-[0.16em] text-on-surface-variant transition-colors hover:text-primary">Joyas</Link>
+            <a href="https://wa.me/5353765926" target="_blank" rel="noopener noreferrer" className="font-label-caps text-[11px] uppercase tracking-[0.16em] text-on-surface-variant transition-colors hover:text-primary">WhatsApp</a>
+          </nav>
           <div className="flex items-center">
+            <Link
+              to="/admin"
+              className="mr-2 hidden min-h-10 items-center gap-2 rounded-lg border border-primary/40 px-4 font-label-caps text-[11px] uppercase tracking-wider text-primary transition-colors hover:bg-primary hover:text-on-primary md:flex"
+            >
+              <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+              Administrar
+            </Link>
             <button
               aria-label="Buscar"
               onClick={() => navigate('/catalogo?buscar=1')}
@@ -64,7 +77,7 @@ export function Header() {
             </Link>
           </div>
         </div>
-        <div className="h-6 px-4 flex items-center justify-center -mt-1 pb-1">
+        <div className="flex h-6 items-center justify-center px-4 pb-1 -mt-1 md:hidden">
           <span className="font-label-caps text-label-caps tracking-[0.22em] text-secondary uppercase opacity-85">
             {TITLES[pathname] ?? ''}
           </span>

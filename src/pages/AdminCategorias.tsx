@@ -79,7 +79,7 @@ export default function AdminCategorias() {
   }
 
   return (
-    <section className="space-y-4 px-4 py-4">
+    <section className="mx-auto max-w-screen-2xl space-y-4 px-4 py-4 md:px-0 md:py-8">
       <header>
         <span className="mb-1 block font-label-caps text-[10px] uppercase tracking-widest text-primary">Organización</span>
         <h1 className="font-headline-lg-mobile text-[28px] leading-9 text-on-surface">Categorías</h1>
@@ -87,7 +87,7 @@ export default function AdminCategorias() {
 
       {error && <p role="alert" className="rounded-xl border border-error/40 bg-error-container/20 p-3 text-sm text-error">{error}</p>}
 
-      <form onSubmit={add} className="space-y-3 rounded-xl bg-surface-container p-4">
+      <form onSubmit={add} className="space-y-3 rounded-xl bg-surface-container p-4 md:max-w-2xl">
         <h2 className="font-title-editorial text-base text-on-surface">Añadir categoría</h2>
         <input
           value={newName}
@@ -108,7 +108,9 @@ export default function AdminCategorias() {
         <button type="submit" className="min-h-11 w-full rounded-lg bg-primary font-medium text-on-primary">Guardar categoría</button>
       </form>
 
-      {loading ? <p className="p-6 text-center text-on-surface-variant">Cargando categorías…</p> : categories.map((category) => (
+      {loading ? <p className="p-6 text-center text-on-surface-variant">Cargando categorías…</p> : (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        {categories.map((category) => (
         <article key={category.id} className="space-y-3 rounded-xl bg-surface-container p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="font-technical-data text-[11px] uppercase text-outline">{category.id}</span>
@@ -160,7 +162,9 @@ export default function AdminCategorias() {
             <button onClick={() => void remove(category)} className="min-h-10 rounded-lg bg-surface-container-highest text-sm text-error">Eliminar</button>
           </div>
         </article>
-      ))}
+        ))}
+        </div>
+      )}
     </section>
   )
 }

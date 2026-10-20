@@ -136,8 +136,8 @@ function ProductView({ product }: { product: Product }) {
 
   return (
     <div className="flex flex-col w-full pb-12">
-      <header className="fixed top-0 inset-x-0 mx-auto max-w-[480px] z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_0_0_rgba(198,164,91,0.2)]">
-        <div className="h-16 px-4 flex items-center justify-between">
+      <header className="fixed top-0 inset-x-0 z-50 bg-surface/85 pt-safe shadow-[0_1px_0_0_rgba(198,164,91,0.2)] backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-4 md:h-20 md:px-8">
           <button
             aria-label="Volver"
             onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/catalogo'))}
@@ -170,11 +170,11 @@ function ProductView({ product }: { product: Product }) {
         </div>
       </header>
 
-      <section className="w-full relative px-4 pt-4 flex flex-col gap-3">
-        <div className="relative w-full aspect-[4/5] bg-surface-container-lowest rounded-xl overflow-hidden shadow-2xl flex items-center justify-center">
+      <section className="relative mx-auto flex w-full max-w-screen-2xl flex-col gap-3 px-4 pt-4 md:px-8">
+        <div className="relative mx-auto flex aspect-[4/5] w-full max-w-2xl items-center justify-center overflow-hidden rounded-xl bg-surface-container-lowest shadow-2xl md:aspect-[5/4] md:max-w-5xl">
           <img
             alt={product.title}
-            className="w-full h-full object-cover transition-opacity duration-300"
+            className="h-full w-full object-cover transition-opacity duration-300"
             src={images[imgIdx] ?? product.image}
           />
           <div className="absolute top-3 left-3 bg-surface-container-lowest/80 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
@@ -193,7 +193,7 @@ function ProductView({ product }: { product: Product }) {
           )}
         </div>
         {thumbs.length > 0 && (
-          <div className="grid grid-cols-4 gap-2 w-full">
+          <div className="mx-auto grid w-full max-w-5xl grid-cols-4 gap-2">
             {thumbs.map((t, i) => (
               <button
                 key={t.label}
@@ -446,7 +446,7 @@ function ProductView({ product }: { product: Product }) {
       {guideOpen && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/70" onClick={() => setGuideOpen(false)}>
           <div
-            className="w-full max-w-[480px] bg-surface-container rounded-t-2xl p-5 flex flex-col gap-3"
+            className="w-full max-w-[480px] rounded-t-2xl bg-surface-container p-5 flex flex-col gap-3 md:max-w-2xl md:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

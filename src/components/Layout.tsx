@@ -15,12 +15,12 @@ export function Layout() {
   }, [pathname])
 
   return (
-    <div className="relative mx-auto w-full max-w-[480px] min-h-screen bg-surface shadow-[0_0_80px_rgba(0,0,0,0.6)]">
+    <div className="relative mx-auto min-h-screen w-full bg-surface md:shadow-none">
       {!isDetail && <Header />}
       <main
         className={`flex flex-col relative w-full bg-surface min-h-screen ${
-          isDetail ? 'pt-16' : isHome ? 'pt-16' : 'pt-[84px]'
-        } ${isDetail ? 'pb-0' : 'pb-24'}`}
+          isDetail ? 'pt-16 md:pt-20' : isHome ? 'pt-16 md:pt-20' : 'pt-[84px] md:pt-20'
+        } ${isDetail ? 'pb-0' : 'pb-24 md:pb-0'}`}
       >
         <div key={`${location.pathname}${location.search}`} className="page-enter">
           <Outlet />

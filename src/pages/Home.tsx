@@ -24,38 +24,38 @@ export default function Home() {
   return (
     <div className="flex flex-col w-full">
       <section className="relative w-full overflow-hidden bg-surface-container-lowest">
-        <div className="relative w-full h-[520px]">
+        <div className="relative h-[520px] w-full md:h-[680px]">
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{ backgroundImage: `url('${IMG.hero}')` }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/60 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-r from-surface-container-lowest/80 via-transparent to-transparent" />
-          <div className="relative h-full px-5 pb-8 flex flex-col justify-end">
+          <div className="relative mx-auto flex h-full w-full max-w-screen-2xl flex-col justify-end px-5 pb-8 md:px-10 md:pb-14">
             <div className="flex items-center gap-2 mb-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.25em]">
                 Joyería / Relojería / Perfumería
               </span>
             </div>
-            <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface tracking-tight mb-3">
+            <h1 className="mb-3 font-headline-lg-mobile text-headline-lg-mobile tracking-tight text-on-surface md:text-6xl xl:text-7xl">
               La elegancia está <br />
               <span className="italic font-normal text-primary">en los detalles</span>
             </h1>
-            <p className="font-body-sm text-body-sm text-on-surface-variant max-w-[320px] mb-6 leading-relaxed">
+            <p className="mb-6 max-w-[320px] font-body-sm text-body-sm leading-relaxed text-on-surface-variant md:max-w-xl md:text-lg">
               Joyas, relojes y fragancias seleccionados para acompañar tus momentos más trascendentes.
             </p>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-2.5 md:max-w-md md:flex-row">
               <Link
                 to="/catalogo"
-                className="w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md tracking-wider uppercase font-semibold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(230,194,118,0.2)] transition-all duration-200 active:scale-[0.98]"
+                className="w-full h-12 rounded-lg bg-primary text-on-primary font-label-md text-label-md tracking-wider uppercase font-semibold flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(230,194,118,0.2)] transition-all duration-200 active:scale-[0.98] md:w-auto md:px-8"
               >
                 <span>Ver catálogo</span>
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </Link>
               <Link
                 to="/catalogo?orden=recientes"
-                className="w-full h-11 rounded-lg bg-surface-container-high/60 backdrop-blur-md text-on-surface font-label-md text-label-md tracking-wider uppercase font-medium flex items-center justify-center gap-2 hover:bg-surface-variant transition-all duration-200"
+                className="w-full h-11 rounded-lg bg-surface-container-high/60 backdrop-blur-md text-on-surface font-label-md text-label-md tracking-wider uppercase font-medium flex items-center justify-center gap-2 hover:bg-surface-variant transition-all duration-200 md:w-auto md:px-6"
               >
                 <span className="material-symbols-outlined text-primary text-[18px]">auto_awesome</span>
                 <span>Descubrir novedades</span>
@@ -66,7 +66,7 @@ export default function Home() {
       </section>
 
       <section className="py-8 bg-surface">
-        <div className="px-5 mb-4 flex items-center justify-between">
+        <div className="mx-auto mb-4 flex max-w-screen-2xl items-center justify-between px-5 md:px-10">
           <div>
             <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em] block">
               Curaduría Exclusiva
@@ -75,14 +75,14 @@ export default function Home() {
           </div>
           <span className="font-technical-data text-technical-data text-on-surface-variant">4 Universos</span>
         </div>
-        <div className="flex gap-3 overflow-x-auto px-5 no-scrollbar py-1 snap-x">
+        <div className="mx-auto flex max-w-screen-2xl gap-3 overflow-x-auto px-5 py-1 no-scrollbar snap-x md:grid md:grid-cols-4 md:gap-6 md:overflow-visible md:px-10">
           {MASTER_CATEGORIES.map((c) => (
             <Link
               key={c.title}
               to={c.to}
-              className="flex-shrink-0 w-36 snap-start flex flex-col items-center group"
+              className="group flex w-36 flex-shrink-0 snap-start flex-col items-center md:w-full"
             >
-              <div className="relative w-36 h-48 rounded-xl overflow-hidden bg-surface-container shadow-md group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)] transition-all duration-300">
+              <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)] md:h-72 md:w-full">
                 <div
                   className="w-full h-full bg-cover bg-center transition-transform duration-500 group-hover:scale-105"
                   style={{ backgroundImage: `url('${c.image}')` }}
@@ -105,8 +105,8 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-6 px-5 bg-surface-container-low">
-        <div className="flex items-end justify-between mb-5">
+      <section className="bg-surface-container-low px-5 py-6 md:px-10 md:py-10">
+        <div className="mx-auto mb-5 flex max-w-screen-2xl items-end justify-between">
           <div>
             <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.2em] block mb-1">
               Selección de Joyería y Perfumería
@@ -121,7 +121,7 @@ export default function Home() {
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
           </Link>
         </div>
-        <div className="flex snap-x gap-3 overflow-x-auto px-0 pb-1 no-scrollbar">
+        <div className="mx-auto flex max-w-screen-2xl snap-x gap-3 overflow-x-auto px-0 pb-1 no-scrollbar md:gap-5">
           {featuredError ? (
             <p role="alert" className="py-4 font-body-sm text-body-sm text-on-surface-variant">
               No pudimos cargar los productos destacados desde Supabase: {featuredError.message}
@@ -129,8 +129,8 @@ export default function Home() {
           ) : cards.length > 0
             ? cards.map((product) => {
                 const card = (
-                  <div className="group w-36 shrink-0 snap-start">
-                    <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)]">
+                  <div className="group w-36 shrink-0 snap-start md:w-56">
+                    <div className="relative h-48 w-36 overflow-hidden rounded-xl bg-surface-container shadow-md transition-all duration-300 group-hover:shadow-[0_4px_16px_rgba(230,194,118,0.15)] md:h-72 md:w-56">
                       <img
                         src={product.image}
                         alt={product.name}
@@ -206,14 +206,14 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-8 px-5 bg-surface-container-low">
+      <section className="bg-surface-container-low px-5 py-8 md:px-10 md:py-12">
         <div className="text-center mb-6">
           <span className="font-label-caps text-label-caps text-secondary uppercase tracking-[0.22em] block mb-1">
             Compromiso Altezza
           </span>
           <h3 className="font-headline-sm text-headline-sm text-on-surface">Distinción &amp; Garantía</h3>
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="mx-auto grid max-w-screen-2xl grid-cols-1 gap-3 md:grid-cols-3 md:gap-5">
           {PILLARS.map((p) => (
             <div key={p.title} className="p-4 rounded-xl bg-surface-container flex items-center gap-3.5 shadow-sm">
               <div className="w-12 h-12 rounded-lg bg-surface-container-high flex items-center justify-center flex-shrink-0 text-primary">

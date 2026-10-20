@@ -23,7 +23,7 @@ export function MenuDrawer({ open, onClose }: { open: boolean; onClose: () => vo
         onClick={onClose}
         className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}
       />
-      <div className="absolute inset-y-0 inset-x-0 mx-auto max-w-[480px] overflow-hidden pointer-events-none">
+      <div className="pointer-events-none absolute inset-y-0 inset-x-0 overflow-hidden">
         <aside
           className={`pointer-events-auto absolute inset-y-0 left-0 w-72 bg-surface-container-lowest shadow-2xl flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full'}`}
         >
