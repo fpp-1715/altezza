@@ -9,33 +9,6 @@ const CATEGORY_TYPES: { value: CategoryKind; label: string }[] = [
   { value: 'perfumeria', label: 'Perfumería' },
 ]
 
-const normalizeCategoryId = (value: string) => value
-  .trim()
-  .toLowerCase()
-  .normalize('NFD')
-  .replace(/[\u0300-\u036f]/g, '')
-  .replace(/[^a-z0-9\s-]/g, '')
-  .replace(/\s+/g, '-')
-  .replace(/-+/g, '-')
-
-const buildCategoryId = (name: string, existing: AdminCategory[]) => {
-  const base = normalizeCategoryId(name) || 'categoria'
-  const used = new Set(existing.map((category) => category.id))
-  const candidates = [base, `${base}-${Date.now().toString().slice(-4)}`]
-
-  for (const candidate of candidates) {
-    if (!used.has(candidate)) return candidate
-  }
-
-  let index = 1
-  let id = `${base}-${Date.now().toString().slice(-4)}-${index}`
-  while (used.has(id)) {
-    index += 1
-    id = `${base}-${Date.now().toString().slice(-4)}-${index}`
-  }
-  return id
-}
-
 export default function AdminCategorias() {
   const [categories, setCategories] = useState<AdminCategory[]>([])
   const [newName, setNewName] = useState('')
@@ -76,11 +49,9 @@ export default function AdminCategorias() {
     event.preventDefault()
     const trimmedName = newName.trim()
     if (!trimmedName) return
-    const generatedId = buildCategoryId(trimmedName, categories)
     setError('')
     try {
       await createCategory({
-        id: generatedId as AdminCategory['id'],
         name: trimmedName,
         sort_order: categories.length + 1,
         active: true,

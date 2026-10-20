@@ -14,9 +14,12 @@ const delay = <T,>(value: T, ms = 80): Promise<T> =>
 
 export async function getProducts(): Promise<Product[]> {
   const client = requireSupabase()
-  const { data, error } = await client.from('products').select('*').eq('active', true).or('stock_count.is.null,stock_count.gt.0')
+  const { data, error } = await client.from('products').select('*')
   if (error) throw presentDatabaseError(error)
-  return (data ?? []).map(fromDatabase)
+  return (data ?? [])
+    .filter((row) => row.active === undefined || Boolean(row.active))
+    .filter((row) => row.stock_count == null || Number(row.stock_count) > 0)
+    .map(fromDatabase)
 }
 
 export async function getAdminProducts(): Promise<Product[]> {
@@ -28,23 +31,35 @@ export async function getAdminProducts(): Promise<Product[]> {
 
 export async function getProduct(id: string): Promise<Product | null> {
   const client = requireSupabase()
-  const { data, error } = await client.from('products').select('*').eq('id', id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').maybeSingle()
+  const { data, error } = await client.from('products').select('*').eq('id', id).maybeSingle()
   if (error) throw presentDatabaseError(error)
-  return data ? fromDatabase(data) : null
+  if (!data) return null
+  const product = fromDatabase(data)
+  if (product.active === false) return null
+  if (product.stockCount != null && product.stockCount <= 0) return null
+  return product
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   const client = requireSupabase()
-  const { data, error } = await client.from('products').select('*').eq('featured', true).eq('active', true).or('stock_count.is.null,stock_count.gt.0')
+  const { data, error } = await client.from('products').select('*')
   if (error) throw presentDatabaseError(error)
-  return (data ?? []).map(fromDatabase)
+  return (data ?? [])
+    .filter((row) => Boolean(row.featured))
+    .filter((row) => row.active === undefined || Boolean(row.active))
+    .filter((row) => row.stock_count == null || Number(row.stock_count) > 0)
+    .map(fromDatabase)
 }
 
 export async function getRelatedProducts(product: Product, limit = 3): Promise<Product[]> {
   const client = requireSupabase()
-  const { data, error } = await client.from('products').select('*').neq('id', product.id).eq('active', true).or('stock_count.is.null,stock_count.gt.0').limit(limit * 3)
+  const { data, error } = await client.from('products').select('*')
   if (error) throw presentDatabaseError(error)
-  const others = (data ?? []).map(fromDatabase)
+  const others = (data ?? [])
+    .filter((row) => row.id !== product.id)
+    .filter((row) => row.active === undefined || Boolean(row.active))
+    .filter((row) => row.stock_count == null || Number(row.stock_count) > 0)
+    .map(fromDatabase)
   return [
     ...others.filter((item) => item.category !== product.category),
     ...others.filter((item) => item.category === product.category),
@@ -53,12 +68,18 @@ export async function getRelatedProducts(product: Product, limit = 3): Promise<P
 
 export async function getCategories(): Promise<CategoryInfo[]> {
   if (supabase) {
-    const { data, error } = await supabase.from('categories').select('id, name').eq('active', true).order('sort_order')
+    const { data, error } = await supabase.from('categories').select('*')
     if (error) throw presentDatabaseError(error)
-    return [{ key: 'all', label: 'Todas' }, ...(data ?? []).map((item) => ({
+    const categories = ((data ?? []) as Array<Record<string, unknown>>)
+      .filter((item) => item.active === undefined || Boolean(item.active))
+      .map((item) => ({
       key: item.id as CategoryInfo['key'],
-      label: item.name,
-    }))]
+      label: String(item.name),
+      sortOrder: Number(item.sort_order ?? 0),
+    }))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map(({ key, label }) => ({ key, label }))
+    return [{ key: 'all', label: 'Todas' }, ...categories]
   }
   return delay(CATEGORIES)
 }
@@ -72,34 +93,26 @@ function inferCategoryKind(id: string): CategoryKind {
   return 'oro'
 }
 
+function categoryFromDatabase(row: Record<string, unknown>): AdminCategory {
+  return {
+    id: String(row.id) as Product['category'],
+    name: String(row.name),
+    sort_order: Number(row.sort_order ?? 0),
+    active: row.active === undefined ? true : Boolean(row.active),
+    kind: (row.kind as CategoryKind | undefined) ?? inferCategoryKind(String(row.id)),
+  }
+}
+
 export async function getAdminCategories(): Promise<AdminCategory[]> {
   if (!supabase) return CATEGORIES.filter((item) => item.key !== 'all').map((item, index) => ({
     id: item.key as Product['category'], name: item.label, sort_order: index, active: true, kind: inferCategoryKind(item.key),
   }))
 
-  const { data, error } = await supabase.from('categories').select('id, name, sort_order, active, kind').order('sort_order')
-  if (error) {
-    if (error.message.toLowerCase().includes('kind') || error.message.toLowerCase().includes('column')) {
-      const { data: legacyData, error: legacyError } = await supabase.from('categories').select('id, name, sort_order, active').order('sort_order')
-      if (legacyError) throw presentDatabaseError(legacyError)
-      return (legacyData ?? []).map((item) => ({
-        id: item.id as Product['category'],
-        name: String(item.name),
-        sort_order: Number(item.sort_order),
-        active: Boolean(item.active),
-        kind: inferCategoryKind(String(item.id)),
-      }))
-    }
-    throw presentDatabaseError(error)
-  }
-
-  return (data ?? []).map((item) => ({
-    id: item.id as Product['category'],
-    name: String(item.name),
-    sort_order: Number(item.sort_order),
-    active: Boolean(item.active),
-    kind: (item.kind as CategoryKind | undefined) ?? inferCategoryKind(String(item.id)),
-  }))
+  const { data, error } = await supabase.from('categories').select('*')
+  if (error) throw presentDatabaseError(error)
+  return ((data ?? []) as Array<Record<string, unknown>>)
+    .map(categoryFromDatabase)
+    .sort((a, b) => a.sort_order - b.sort_order)
 }
 
 export async function updateCategory(id: Product['category'], changes: { name?: string; active?: boolean; kind?: CategoryKind }) {
@@ -120,25 +133,39 @@ export async function updateCategory(id: Product['category'], changes: { name?: 
   }
 }
 
-export async function createCategory(category: AdminCategory) {
+export async function createCategory(category: Omit<AdminCategory, 'id'>) {
   if (!supabase) throw new Error('La gestión de categorías requiere conexión con Supabase.')
-  const payload = { ...category }
-  try {
-    const { error } = await supabase.from('categories').insert(payload)
-    if (error) throw presentDatabaseError(error)
-  } catch (error) {
-    if (error instanceof Error && /kind|column/i.test(error.message)) {
-      const { error: fallbackError } = await supabase.from('categories').insert({
-        id: category.id,
-        name: category.name,
-        sort_order: category.sort_order,
-        active: category.active,
-      })
-      if (fallbackError) throw presentDatabaseError(fallbackError)
-      return
-    }
-    throw error
+  const payload: Record<string, unknown> = {
+    name: category.name,
+    sort_order: category.sort_order,
+    active: category.active,
+    kind: category.kind,
   }
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const { error } = await supabase.from('categories').insert(payload)
+    if (!error) return
+
+    const message = error.message.toLowerCase()
+    const optionalColumn = (['kind', 'sort_order', 'active'] as const).find((column) =>
+      column in payload
+      && message.includes(column)
+      && (message.includes('column') || message.includes('schema cache') || error.code === 'PGRST204'),
+    )
+    if (optionalColumn) {
+      delete payload[optionalColumn]
+      continue
+    }
+
+    if (!('id' in payload) && error.code === '23502' && /column\s+["']?id["']?/i.test(error.message)) {
+      payload.id = crypto.randomUUID()
+      continue
+    }
+
+    throw presentDatabaseError(error)
+  }
+
+  throw new Error('No se pudo crear la categoría con las columnas disponibles en Supabase.')
 }
 
 export async function countProductsInCategory(id: Product['category']): Promise<number> {
